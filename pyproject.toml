@@ -12,6 +12,7 @@ dependencies = [
 
 [project.optional-dependencies]
 openai = ["openai>=1.0"]
+anthropic = ["anthropic>=1.0"]
 huggingface = ["sentence-transformers>=3.0"]
 pdf = ["pypdf>=4.0"]
 all = ["easyrag[openai,huggingface,pdf]"]
