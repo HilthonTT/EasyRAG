@@ -12,6 +12,7 @@ which who why will with you your
 """
 STOPWORDS = frozenset(_STOPWORDS_TEXT.split())
 
+
 def tokenize(text: str, remove_stopwords: bool = True) -> list[str]:
     tokens = [t.lower() for t in _TOKEN_RE.findall(text)]
     if remove_stopwords:
