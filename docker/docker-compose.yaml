@@ -1,0 +1,10 @@
+services:
+  easyrag:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+    env_file:
+      - ../.env
+    volumes:
+      - ../data:/app/data
+    command: ["ask", "/app/data", "What is RAG?"]

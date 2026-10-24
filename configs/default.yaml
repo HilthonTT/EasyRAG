@@ -1,0 +1,18 @@
+# Default EasyRAG configuration.
+# Any value can be overridden with an env var: EASYRAG_<SECTION>_<KEY>, e.g. EASYRAG_RETRIEVER_TOP_K=8
+
+splitter:
+  chunk_size: 500
+  chunk_overlap: 50
+
+retriever:
+  top_k: 4
+
+embedding:
+  provider: fake        # fake | openai | huggingface
+  model: ""
+
+generator:
+  provider: echo        # echo | openai
+  model: ""
+  temperature: 0.0

@@ -1,0 +1,3 @@
+Retrieval-Augmented Generation (RAG) combines a retriever with a language model.
+The retriever finds passages relevant to a question, and the language model writes an answer grounded in those passages.
+This reduces hallucinations and lets the model use knowledge that was not in its training data.
