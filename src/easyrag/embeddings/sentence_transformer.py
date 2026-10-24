@@ -6,6 +6,7 @@ from easyrag.embeddings.base import BaseEmbeddings
 
 DEFAULT_MODEL = "BAAI/bge-small-en-v1.5"
 
+
 def default_prefixes(model: str) -> tuple[str, str]:
     """(query_prefix, passage_prefix) recommended by the model card."""
     name = model.lower()
@@ -14,6 +15,7 @@ def default_prefixes(model: str) -> tuple[str, str]:
     if "bge" in name and "-en" in name and "m3" not in name:
         return "Represent this sentence for searching relevant passages: ", ""
     return "", ""
+
 
 class SentenceTransformerEmbeddings(BaseEmbeddings):
     def __init__(
@@ -38,11 +40,11 @@ class SentenceTransformerEmbeddings(BaseEmbeddings):
         self.passage_prefix = default_passage if passage_prefix is None else passage_prefix
         self.batch_size = batch_size
         self.model = SentenceTransformer(model, device=device, **model_kwargs)
-        
+
     @property
     def name(self) -> str:
         return f"sentence_transformer:{self.model_name}"
-    
+
     def _encode(self, texts: list[str]) -> list[list[float]]:
         vectors = self.model.encode(
             texts,
