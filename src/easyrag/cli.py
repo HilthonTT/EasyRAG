@@ -5,7 +5,7 @@ from __future__ import annotations
 import argparse
 
 from easyrag.config import Config
-from easyrag.loaders import DirectoryLoader
+from easyrag.loaders.directory import DirectoryLoader
 from easyrag.pipelines import NaiveRAGPipeline
 
 
