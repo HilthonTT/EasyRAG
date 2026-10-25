@@ -1,7 +1,8 @@
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
-from typing import Any, Iterator, TypeVar
+from collections.abc import Iterator
+from typing import Any, TypeVar
 
 from easyrag.config import Config
 from easyrag.generators.base import BaseGenerator
@@ -48,6 +49,7 @@ class BasePipeline(ABC):
     @classmethod
     def from_config(cls: type[P], config: Config | None = None, **overrides: Any) -> P:
         """Build the pipeline and all its components from config"""
+        
 
     @abstractmethod
     def run(self, question: str) -> RAGResponse:
