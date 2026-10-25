@@ -2,11 +2,11 @@ from typing import Any
 
 from easyrag.generators.base import BaseGenerator
 
+DEFAULT_MODEL = "claude-opus-5-5"
+
 
 class AnthropicGenerator(BaseGenerator):
-    def __init__(
-        self, model: str = "claude-opus-5-5", effort: str = "low", max_tokens: int = 16_000
-    ):
+    def __init__(self, model: str = DEFAULT_MODEL, effort: str = "low", max_tokens: int = 16_000):
         try:
             import anthropic
         except ImportError as e:

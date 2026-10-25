@@ -49,7 +49,6 @@ class BasePipeline(ABC):
     @classmethod
     def from_config(cls: type[P], config: Config | None = None, **overrides: Any) -> P:
         """Build the pipeline and all its components from config"""
-        
 
     @abstractmethod
     def run(self, question: str) -> RAGResponse:
