@@ -8,7 +8,7 @@ from typing import Any
 import yaml
 
 DEFAULT_CONFIG_PATH = Path("configs/default.yaml")
-ENV_PREFIX = "RAG"
+ENV_PREFIX = "EASYRAG"
 
 
 @dataclass
@@ -94,7 +94,7 @@ class Config:
         return config
 
     def apply_env_overrides(self) -> None:
-        """Override values from env vars named RAG_<SECTION>_<KEY>."""
+        """Override values from env vars named EASYRAG_<SECTION>_<KEY>."""
         for section in fields(self):
             current = getattr(self, section.name)
             for f in fields(current):

@@ -9,10 +9,9 @@ retriever:
   top_k: 4
 
 embedding:
-  provider: fake        # fake | openai | huggingface
+  provider: fake        # fake | sentence_transformer | openai
   model: ""
 
 generator:
-  provider: echo        # echo | openai
+  provider: echo        # echo | anthropic | openai | ollama
   model: ""
-  temperature: 0.0

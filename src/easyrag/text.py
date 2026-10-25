@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import re
 
-_TOKEN_RE = re.compile(r"[\w']", re.UNICODE)
+_TOKEN_RE = re.compile(r"[\w']+", re.UNICODE)
 
 # A short English stopword list; enough to keep BM25 and hashing embeddings from matching on glue.
 _STOPWORDS_TEXT = """

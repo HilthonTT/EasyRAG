@@ -60,7 +60,7 @@ def build_reranker(cfg: RerankerConfig) -> BaseReranker | None:
     if cfg.provider in ("", "none"):
         return None
     if cfg.provider == "cross_encoder":
-        from rag.rerankers.cross_encoder import DEFAULT_MODEL, CrossEncoderReranker
+        from easyrag.rerankers.cross_encoder import DEFAULT_MODEL, CrossEncoderReranker
 
         return CrossEncoderReranker(cfg.model or DEFAULT_MODEL)
     raise ValueError(f"Unknown reranker.provider: {cfg.provider!r}")
@@ -79,10 +79,10 @@ def build_generator(cfg: GeneratorConfig) -> BaseGenerator:
 
         return OpenAIGenerator(cfg.model or OPENAI_MODEL, cfg.max_tokens, cfg.base_url or None)
     if cfg.provider == "ollama":
+        from easyrag.generators.ollama import DEFAULT_BASE_URL, OllamaGenerator
         from easyrag.generators.ollama import DEFAULT_MODEL as OLLAMA_MODEL
-        from easyrag.generators.ollama import OllamaGenerator
 
-        return OllamaGenerator(cfg.model or OLLAMA_MODEL, cfg.base_url or DEFAULT_MODEL)
+        return OllamaGenerator(cfg.model or OLLAMA_MODEL, cfg.base_url or DEFAULT_BASE_URL)
     raise ValueError(f"Unknown generator.provider: {cfg.provider!r}")
 
 

@@ -20,12 +20,23 @@ class RecursiveCharacterSplitter(BaseSplitter):
         for piece in splits:
             if current and length + len(piece) > self.chunk_size:
                 chunks.append("".join(current))
+                # Keep a tail of the previous chunk as overlap while the next piece still fits.
+                while current and (
+                    length > self.chunk_overlap or length + len(piece) > self.chunk_size
+                ):
+                    length -= len(current.pop(0))
+            current.append(piece)
+            length += len(piece)
 
-    def _split(self, text: str) -> list[str]:
-        separator, remaining = self.separators[-1], []
-        for i, sep in enumerate(self.separators):
+        if current:
+            chunks.append("".join(current))
+        return chunks
+
+    def _split(self, text: str, separators: list[str]) -> list[str]:
+        separator, remaining = separators[-1], []
+        for i, sep in enumerate(separators):
             if sep == "" or sep in text:
-                separator, remaining = sep, separator[i + 1 :]
+                separator, remaining = sep, separators[i + 1 :]
                 break
 
         if separator:

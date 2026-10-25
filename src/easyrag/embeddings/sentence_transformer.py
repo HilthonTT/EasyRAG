@@ -11,7 +11,7 @@ def default_prefixes(model: str) -> tuple[str, str]:
     """(query_prefix, passage_prefix) recommended by the model card."""
     name = model.lower()
     if "e5" in name:
-        return "query: ", "passage"
+        return "query: ", "passage: "
     if "bge" in name and "-en" in name and "m3" not in name:
         return "Represent this sentence for searching relevant passages: ", ""
     return "", ""
@@ -26,7 +26,7 @@ class SentenceTransformerEmbeddings(BaseEmbeddings):
         batch_size: int = 32,
         device: str | None = None,
         **model_kwargs: Any,
-    ):
+    ) -> None:
         try:
             from sentence_transformers import SentenceTransformer
         except ImportError as e:
@@ -54,8 +54,8 @@ class SentenceTransformerEmbeddings(BaseEmbeddings):
         )
         return [list(map(float, v)) for v in vectors]
 
-    def embed_documents(self, texts):
+    def embed_documents(self, texts: list[str]) -> list[list[float]]:
         return self._encode([self.passage_prefix + t for t in texts])
 
-    def embed_query(self, text):
+    def embed_query(self, text: str) -> list[float]:
         return self._encode([self.query_prefix + text])[0]

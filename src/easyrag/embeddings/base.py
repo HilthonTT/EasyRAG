@@ -14,6 +14,7 @@ class BaseEmbeddings(ABC):
         """Embed a single query. Override if the model uses a separate query encoder."""
         return self.embed_documents([text])[0]
 
+    @property
     def name(self) -> str:
-        """Identifies the model, so a save index is never queried with a different one."""
+        """Identifies the model, so a saved index is never queried with a different one."""
         return type(self).__name__

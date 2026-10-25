@@ -22,14 +22,15 @@ class InMemoryVectorStore(BaseVectorStore):
         self._vectors: list[Any] = []
         self._matrix: Any = None
 
-    def __len__(self):
+    def __len__(self) -> int:
         return len(self.chunks)
 
     def add(self, chunks: list[Chunk], embeddings: list[list[float]]) -> None:
         if len(chunks) != len(embeddings):
-            raise ValueError("chunks and embeddings msut have the same length")
+            raise ValueError("chunks and embeddings must have the same length")
         self.chunks.extend(chunks)
-        self._vectors.extend()
+        self._vectors.extend(_normalize(np.asarray(e, dtype=np.float32)) for e in embeddings)
+        self._matrix = None
 
     def search(self, query_embedding: list[float], top_k: int) -> list[RetrievedChunk]:
         if not self.chunks or top_k <= 0:

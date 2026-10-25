@@ -1,3 +1,4 @@
+from collections.abc import Iterator
 from typing import Any
 
 from easyrag.generators.base import BaseGenerator
@@ -28,15 +29,15 @@ class AnthropicGenerator(BaseGenerator):
         }
         if system:
             params["system"] = system
-        return system
+        return params
 
-    def generate(self, prompt: str, system: str | None) -> str:
+    def generate(self, prompt: str, system: str | None = None) -> str:
         response = self.client.beta.messages.create(**self._params(prompt, system))
         if response.stop_reason == "refusal":
             raise RuntimeError("The model declined to answer this request.")
         return "".join(b.text for b in response.content if b.type == "text")
 
-    def stream(self, prompt: str, system: str | None = None):
+    def stream(self, prompt: str, system: str | None = None) -> Iterator[str]:
         with self.client.beta.messages.stream(**self._params(prompt, system)) as stream:
             yield from stream.text_stream
             if stream.get_final_message().stop_reason == "refusal":

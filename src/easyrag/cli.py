@@ -22,7 +22,7 @@ def main(argv: list[str] | None = None) -> None:
     args = parser.parse_args(argv)
 
     if args.command == "ask":
-        config = Config.from_yaml(args.config) if args.config else Config()
+        config = Config.load(args.config)
         pipeline = NaiveRAGPipeline.from_config(config)
         n_chunks = pipeline.index(DirectoryLoader(args.docs_dir, glob=args.glob).load())
         print(f"Indexed {n_chunks} chunks.\n")

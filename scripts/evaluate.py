@@ -24,7 +24,7 @@ def main() -> None:
     with open(args.dataset, encoding="utf-8") as f:
         rows = [json.loads(line) for line in f if line.strip()]
 
-    config = Config.from_yaml(args.config) if args.config else Config()
+    config = Config.load(args.config)
     pipeline = NaiveRAGPipeline.from_config(config)
     pipeline.index([Document(content=row["context"]) for row in rows if row.get("context")])
 

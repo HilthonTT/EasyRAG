@@ -17,7 +17,7 @@ class BM25Retriever(BaseRetriever):
         self.k1 = k1
         self.b = b
         self.chunks: list[Chunk] = []
-        self._term_freqs = list[Counter[str]] = []
+        self._term_freqs: list[Counter[str]] = []
         self._doc_lengths: list[int] = []
         self._postings: defaultdict[str, list[int]] = defaultdict(list)
 

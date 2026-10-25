@@ -1,8 +1,8 @@
 from __future__ import annotations
 
+import json
 from abc import ABC, abstractmethod
 from collections.abc import Iterator
-import json
 from pathlib import Path
 from typing import Any, TypeVar
 
@@ -11,11 +11,11 @@ from easyrag.generators.base import BaseGenerator
 from easyrag.prompts import DEFAULT_RAG_PROMPT, SYSTEM_PROMPT
 from easyrag.rerankers.base import BaseReranker
 from easyrag.retrievers.base import BaseRetriever
+from easyrag.retrievers.hybrid import HybridRetriever
+from easyrag.retrievers.vector import VectorRetriever
 from easyrag.schema import Chunk, Document, RAGResponse, RetrievedChunk
 from easyrag.splitters.base import BaseSplitter
 from easyrag.splitters.recursive import RecursiveCharacterSplitter
-from easyrag.retrievers.hybrid import HybridRetriever
-from easyrag.retrievers.vector import VectorRetriever
 
 P = TypeVar("P", bound="BasePipeline")
 

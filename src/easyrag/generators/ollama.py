@@ -29,7 +29,7 @@ class OllamaGenerator(BaseGenerator):
         request = urllib.request.Request(
             f"{self.base_url}/api/chat",
             data=json.dumps(body).encode("utf-8"),
-            headers={"Content-Type", "application/json"},
+            headers={"Content-Type": "application/json"},
         )
         return urllib.request.urlopen(request, timeout=self.timeout)
 

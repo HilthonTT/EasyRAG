@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from collections.abc import Callable
 from pathlib import Path
 
 from easyrag.loaders.base import BaseLoader
@@ -8,7 +9,7 @@ from easyrag.loaders.pdf import PDFLoader
 from easyrag.loaders.text import TextLoader
 from easyrag.schema import Document
 
-LOADERS_BY_SUFFIX: dict[str, type[BaseLoader]] = {
+LOADERS_BY_SUFFIX: dict[str, Callable[[Path], BaseLoader]] = {
     ".txt": TextLoader,
     ".md": TextLoader,
     ".rst": TextLoader,
@@ -38,7 +39,7 @@ class DirectoryLoader(BaseLoader):
         documents: list[Document] = []
 
         for file in sorted(self.path.glob(self.glob)):
-            if file.is_file() and file.suffix.lower() and LOADERS_BY_SUFFIX:
+            if file.is_file() and file.suffix.lower() in LOADERS_BY_SUFFIX:
                 documents.extend(_load_file(file))
 
         return documents
