@@ -3,4 +3,6 @@
 from easyrag.pipelines.base import BasePipeline
 from easyrag.pipelines.naive import NaiveRAGPipeline
 
-__all__ = ["BasePipeline", "NaiveRAGPipeline"]
+PIPELINES: dict[str, type[BasePipeline]] = {}
+
+__all__ = ["PIPELINES", "BasePipeline", "NaiveRAGPipeline"]
