@@ -26,12 +26,12 @@ ITERATIVE_QUERY_TEMPLATE = "{question}\n{previous_answer}"
 
 def format_context(results: list[RetrievedChunk]) -> str:
     parts = []
-    
+
     for i, r in enumerate(results, start=1):
         source = r.chunk.source
         header = f"[{i}] (source: {Path(source).name})" if source else f"[{i}]"
         parts.append(f"{header}\n{r.chunk.content}")
-    
+
     return "\n\n".join(parts)
 
 
