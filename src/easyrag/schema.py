@@ -3,17 +3,21 @@
 from __future__ import annotations
 
 import uuid
-from dataclasses import dataclass, field
+from dataclasses import asdict, dataclass, field
 from typing import Any
+
+
+def _new_id() -> str:
+    return uuid.uuid4().hex
 
 
 @dataclass
 class Document:
-    """A raw source document, e.g. one loaded file."""
+    """A raw source document, e.g. one loaded file or one PDF page."""
 
     content: str
     metadata: dict[str, Any] = field(default_factory=dict)
-    id: str = field(default_factory=lambda: uuid.uuid4().hex)
+    id: str = field(default_factory=_new_id)
 
 
 @dataclass
@@ -23,12 +27,23 @@ class Chunk:
     content: str
     document_id: str
     metadata: dict[str, Any] = field(default_factory=dict)
-    id: str = field(default_factory=lambda: uuid.uuid4().hex)
+    id: str = field(default_factory=_new_id)
+
+    def to_dict(self) -> dict[str, Any]:
+        return asdict(self)
+
+    @classmethod
+    def from_dict(cls, data: dict[str, Any]) -> Chunk:
+        return cls(**data)
+
+    @property
+    def source(self) -> str:
+        return str(self.metadata.get("source", ""))
 
 
 @dataclass
 class RetrievedChunk:
-    """A chunk returned by a retriever, with its relevance score."""
+    """A chunk returned by a retriever, with its relevance score (higher is better)."""
 
     chunk: Chunk
     score: float
