@@ -6,7 +6,7 @@ import argparse
 
 from easyrag.config import Config
 from easyrag.loaders.directory import DirectoryLoader
-from easyrag.pipelines import NaiveRAGPipeline
+from easyrag.pipelines import PIPELINES
 
 
 def main(argv: list[str] | None = None) -> None:
@@ -23,7 +23,9 @@ def main(argv: list[str] | None = None) -> None:
 
     if args.command == "ask":
         config = Config.load(args.config)
-        pipeline = NaiveRAGPipeline.from_config(config)
+        if config.pipeline.type not in PIPELINES:
+            parser.error(f"Unknown pipeline.type: {config.pipeline.type!r}")
+        pipeline = PIPELINES[config.pipeline.type].from_config(config)
         n_chunks = pipeline.index(DirectoryLoader(args.docs_dir, glob=args.glob).load())
         print(f"Indexed {n_chunks} chunks.\n")
         print(pipeline.run(args.question).answer)

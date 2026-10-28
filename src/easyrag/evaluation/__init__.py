@@ -1,3 +1,4 @@
+from easyrag.evaluation.evaluator import EvalExample, EvalReport, evaluate, load_examples
 from easyrag.evaluation.metrics import (
     contains_answer,
     exact_match,
@@ -7,7 +8,6 @@ from easyrag.evaluation.metrics import (
     reciprocal_rank,
     token_f1,
 )
-from easyrag.evaluation.evaluator import EvalExample, EvalReport, evaluate, load_examples
 
 __all__ = [
     "exact_match",

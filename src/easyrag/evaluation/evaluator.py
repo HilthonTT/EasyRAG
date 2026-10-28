@@ -36,10 +36,12 @@ class EvalReport:
 
     @property
     def summary(self) -> dict[str, float]:
-        if not self.results:
-            return {}
-        keys = self.results[0].scores.keys()
-        return {k: sum(r.scores[k] for r in self.results) / len(self.results) for k in keys}
+        # Examples without sources or answers skip those metrics: average each where present.
+        totals: dict[str, list[float]] = {}
+        for r in self.results:
+            for k, v in r.scores.items():
+                totals.setdefault(k, []).append(v)
+        return {k: sum(vs) / len(vs) for k, vs in totals.items()}
 
     def to_dict(self) -> dict[str, Any]:
         return {
@@ -84,7 +86,7 @@ def evaluate(
             response = pipeline.run(example.question)
             contexts, answer = response.contexts, response.answer
         else:
-            contexts, answer = pipeline.retrieve(example.question), ""
+            contexts, answer = pipeline.retrieve(pipeline.search_query(example.question)), ""
 
         retrieved = [Path(c.chunk.source).name for c in contexts]
         relevant = [Path(s).name for s in example.sources]

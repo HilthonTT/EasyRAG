@@ -49,7 +49,7 @@ def recall_at_k(retrieved_ids: list[str], relevant_ids: list[str], k: int | None
     """Fraction of relevant items found in the first `k` retrieved."""
     if not relevant_ids:
         return 0.0
-    top = set(retrieved_ids[:k] if k else retrieved_ids)
+    top = set(retrieved_ids if k is None else retrieved_ids[:k])
     return len(top & set(relevant_ids)) / len(set(relevant_ids))
 
 

@@ -63,6 +63,10 @@ class BasePipeline(ABC):
         """Extra constructor arguments a subclass reads from config."""
         return {}
 
+    def search_query(self, question: str) -> str:
+        """The text used for retrieval. Subclasses may rewrite the question (see HyDE)."""
+        return question
+
     @abstractmethod
     def run(self, question: str) -> RAGResponse:
         """Answer a single question."""
@@ -110,7 +114,7 @@ class BasePipeline(ABC):
         path = Path(path)
         manifest_path = path / "manifest.json"
         if not manifest_path.exists():
-            raise FileNotFoundError(f"No index found at {path}. Run `rag index` first.")
+            raise FileNotFoundError(f"No index found at {path}. Create one with `save()` first.")
         manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
         with open(path / "chunks.jsonl", encoding="utf-8") as f:
             chunks = [Chunk.from_dict(json.loads(line)) for line in f if line.strip()]

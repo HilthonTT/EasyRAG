@@ -22,3 +22,8 @@ def test_split_documents_keeps_metadata() -> None:
 def test_overlap_must_be_smaller_than_size() -> None:
     with pytest.raises(ValueError):
         CharacterSplitter(chunk_size=10, chunk_overlap=10)
+
+
+def test_no_duplicate_tail_chunk() -> None:
+    # The first window already covers the whole text, so there must not be a second one.
+    assert CharacterSplitter(chunk_size=10, chunk_overlap=2).split_text("x" * 9) == ["x" * 9]

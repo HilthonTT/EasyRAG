@@ -13,3 +13,10 @@ def test_token_f1_partial_overlap() -> None:
 def test_hit_rate() -> None:
     assert hit_rate(["a", "b"], ["b"]) == 1.0
     assert hit_rate(["a"], ["c"]) == 0.0
+
+
+def test_recall_at_k_zero() -> None:
+    from easyrag.evaluation import recall_at_k
+
+    assert recall_at_k(["a"], ["a"], k=0) == 0.0
+    assert recall_at_k(["a"], ["a"]) == 1.0

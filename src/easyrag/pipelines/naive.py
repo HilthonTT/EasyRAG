@@ -10,10 +10,6 @@ from easyrag.schema import RAGResponse, RetrievedChunk
 class NaiveRAGPipeline(BasePipeline):
     """The classic retrieve-then-generate flow (FlashRAG's SequentialPipeline)."""
 
-    def search_query(self, question: str) -> str:
-        """The text used for retrieval. Subclasses may rewrite the question (see HyDE)."""
-        return question
-
     def run(self, question: str) -> RAGResponse:
         contexts, answer = self.stream(question)
         return RAGResponse(question=question, answer="".join(answer), contexts=contexts)
