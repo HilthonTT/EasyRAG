@@ -56,3 +56,4 @@ class RAGResponse:
     question: str
     answer: str
     contexts: list[RetrievedChunk] = field(default_factory=list)
+    metadata: dict[str, Any] = field(default_factory=dict)

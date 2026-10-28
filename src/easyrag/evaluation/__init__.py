@@ -7,6 +7,7 @@ from easyrag.evaluation.metrics import (
     reciprocal_rank,
     token_f1,
 )
+from easyrag.evaluation.evaluator import EvalExample, EvalReport, evaluate, load_examples
 
 __all__ = [
     "exact_match",
@@ -16,4 +17,8 @@ __all__ = [
     "normalize_answer",
     "recall_at_k",
     "reciprocal_rank",
+    "EvalExample",
+    "EvalReport",
+    "evaluate",
+    "load_examples",
 ]
