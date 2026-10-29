@@ -1,17 +1,16 @@
-"""Command-line entry point: `easyrag ask <docs_dir> "question"`."""
+"""Command-line entry point: `easyrag index <docs>`, then `easyrag ask "question"`."""
 
 from __future__ import annotations
 
 import argparse
 import io
 import json
-from pathlib import Path
 import sys
+from pathlib import Path
 
 from easyrag.config import Config
 from easyrag.factory import build_pipeline
 from easyrag.loaders.directory import DirectoryLoader
-from easyrag.pipelines import PIPELINES
 from easyrag.pipelines.base import BasePipeline
 from easyrag.schema import RetrievedChunk
 
@@ -73,7 +72,10 @@ def main(argv: list[str] | None = None) -> None:
                 break
             if not question:
                 break
-            _answer(pipeline, question, args.show_context)
+            try:
+                _answer(pipeline, question, args.show_context)
+            except KeyboardInterrupt:  # stop this answer, keep the session
+                print("\n[interrupted]")
     elif args.command == "eval":
         from easyrag.evaluation import evaluate, load_examples
 
