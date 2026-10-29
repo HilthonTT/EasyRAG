@@ -31,7 +31,9 @@ print(response.answer)
 From the command line:
 
 ```bash
-uv run easyrag ask examples/data "What is RAG?"
+uv run easyrag index examples/data      # build and save the index
+uv run easyrag ask "What is RAG?"       # or: easyrag ask --docs examples/data "What is RAG?"
+uv run easyrag chat                     # interactive
 ```
 
 See [docs/architecture.md](docs/architecture.md) for how the pieces fit together.
