@@ -20,7 +20,9 @@ def main(argv: list[str] | None = None) -> None:
     if isinstance(sys.stdout, io.TextIOWrapper):  # Windows consoles default to a legacy code page
         sys.stdout.reconfigure(encoding="utf-8", errors="replace")
 
-    parser = argparse.ArgumentParser(prog="rag", description="Retrieval-Augmented Generation CLI")
+    parser = argparse.ArgumentParser(
+        prog="easyrag", description="Retrieval-Augmented Generation CLI"
+    )
     parser.add_argument("--config", help="YAML config file (default: configs/default.yaml)")
     parser.add_argument(
         "--index-dir", help="Where the index is saved (default: pipeline.index_dir)"

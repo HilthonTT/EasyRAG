@@ -3,7 +3,7 @@
     uv run python scripts/evaluate.py examples/data/eval.jsonl --docs examples/data
     uv run python scripts/evaluate.py data/my_eval.jsonl --retrieval-only
 
-Equivalent to `rag eval ...`; kept as a script for experiments you want to customise.
+Equivalent to `easyrag eval ...`; kept as a script for experiments you want to customise.
 """
 
 from __future__ import annotations
