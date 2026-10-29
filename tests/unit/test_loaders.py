@@ -1,6 +1,20 @@
 from pathlib import Path
 
-from easyrag.loaders import DirectoryLoader
+from easyrag.loaders import DirectoryLoader, HTMLLoader
+
+
+def test_html_loader_separates_table_cells(tmp_path: Path) -> None:
+    page = tmp_path / "page.html"
+    page.write_text(
+        "<html><head><title>T</title></head><body>"
+        "<table><tr><td>Alpha</td><td>Beta</td></tr></table><h6>Six</h6></body></html>",
+        encoding="utf-8",
+    )
+
+    doc = HTMLLoader(page).load()[0]
+
+    assert doc.content.splitlines() == ["Alpha", "Beta", "Six"]
+    assert doc.metadata["title"] == "T"
 
 
 def test_directory_loader_tolerates_non_utf8_file(tmp_path: Path) -> None:

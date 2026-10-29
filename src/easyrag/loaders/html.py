@@ -7,7 +7,11 @@ from easyrag.loaders.base import BaseLoader
 from easyrag.schema import Document
 
 _SKIP_TAGS = {"script", "style", "noscript", "head", "nav", "footer"}
-_BLOCK_TAGS = {"p", "div", "br", "tr", "li", "section", "article", "h1", "h2", "h3", "h4", "h5"}
+_BLOCK_TAGS = {
+    "p", "div", "br", "hr", "tr", "td", "th", "li", "ul", "ol", "dt", "dd", "table", "pre",
+    "blockquote", "section", "article", "main", "aside", "header",
+    "h1", "h2", "h3", "h4", "h5", "h6",
+}  # fmt: skip
 
 
 class _TextExtractor(HTMLParser):
