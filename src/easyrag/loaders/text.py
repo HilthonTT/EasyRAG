@@ -14,5 +14,6 @@ class TextLoader(BaseLoader):
         self.encoding = encoding
 
     def load(self) -> list[Document]:
-        content = self.path.read_text(encoding=self.encoding)
+        # One badly encoded file should not abort indexing a whole folder.
+        content = self.path.read_text(encoding=self.encoding, errors="replace")
         return [Document(content=content, metadata={"source": str(self.path)})]
