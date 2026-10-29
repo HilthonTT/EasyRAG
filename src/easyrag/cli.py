@@ -45,9 +45,12 @@ def main(argv: list[str] | None = None) -> None:
     ev.add_argument("--output", help="Write per-question results to this JSON file")
 
     args = parser.parse_args(argv)
-    config = Config.load(args.config)
+    try:
+        config = Config.load(args.config)
+        pipeline = build_pipeline(config)
+    except (ValueError, ImportError, OSError) as e:  # bad config value, missing extra, no file
+        parser.error(str(e))
     index_dir = Path(args.index_dir or config.pipeline.index_dir)
-    pipeline = build_pipeline(config)
 
     if args.command == "index":
         n_docs, n_chunks = _index(pipeline, args.docs, args.glob)
