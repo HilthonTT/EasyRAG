@@ -50,8 +50,8 @@ class GeneratorConfig:
 
 @dataclass
 class PipelineConfig:
-    type: str = "naive"  # naive | hyde | iterative
-    max_iterations: int = 3  # iterative only
+    type: str = "naive"  # naive | hyde | iterative | self_ask | ircot
+    max_iterations: int = 3  # iterative, self_ask and ircot
     index_dir: str = ".rag_index"
 
 
