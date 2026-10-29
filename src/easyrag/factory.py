@@ -96,3 +96,14 @@ def build_components(config: Config) -> dict[str, Any]:
         "top_k": config.retriever.top_k,
         "fetch_k": config.reranker.fetch_k,
     }
+
+
+def build_pipeline(config: Config | None = None) -> Any:
+    from easyrag.pipelines import PIPELINES
+
+    config = config or Config.load()
+    try:
+        pipeline_cls = PIPELINES[config.pipeline.type]
+    except KeyError:
+        raise ValueError(f"Unknown pipeline.type: {config.pipeline.type!r}") from None
+    return pipeline_cls.from_config(config)
