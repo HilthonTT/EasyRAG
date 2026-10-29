@@ -33,7 +33,7 @@ class IterativeRAGPipeline(BasePipeline):
                 if answer
                 else question
             )
-            contexts = self.retrieve(query)
+            contexts = self.retrieve(query, question)
             prompt = build_rag_prompt(question, contexts, self.prompt_template)
             answer = self.generator.generate(prompt, system=self.system_prompt)
             history.append({"query": query, "answer": answer})

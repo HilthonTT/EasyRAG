@@ -86,11 +86,16 @@ class BasePipeline(ABC):
         self.chunks.extend(chunks)
         return len(chunks)
 
-    def retrieve(self, query: str) -> list[RetrievedChunk]:
+    def retrieve(self, query: str, question: str | None = None) -> list[RetrievedChunk]:
+        """Search with `query`; rerank against `question` (default `query`).
+
+        HyDE and iterative pipelines search with rewritten text, but the reranker should judge
+        relevance to what the user actually asked.
+        """
         if self.reranker is None:
             return self.retriever.retrieve(query, self.top_k)
         candidates = self.retriever.retrieve(query, max(self.fetch_k, self.top_k))
-        return self.reranker.rerank(query, candidates, self.top_k)
+        return self.reranker.rerank(question or query, candidates, self.top_k)
 
     def save(self, path: str | Path) -> None:
         path = Path(path)

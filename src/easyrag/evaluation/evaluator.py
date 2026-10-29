@@ -86,7 +86,8 @@ def evaluate(
             response = pipeline.run(example.question)
             contexts, answer = response.contexts, response.answer
         else:
-            contexts, answer = pipeline.retrieve(pipeline.search_query(example.question)), ""
+            query = pipeline.search_query(example.question)
+            contexts, answer = pipeline.retrieve(query, example.question), ""
 
         retrieved = [Path(c.chunk.source).name for c in contexts]
         relevant = [Path(s).name for s in example.sources]
