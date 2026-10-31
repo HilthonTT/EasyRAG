@@ -12,16 +12,33 @@ Question ─────────────► Retriever ◄─────
                    Prompt ─► Generator ─► Answer
 ```
 
-| Package        | Base class        | Built-in implementations         |
-| -------------- | ----------------- | -------------------------------- |
-| `loaders`      | `BaseLoader`      | `TextLoader`, `DirectoryLoader`  |
-| `splitters`    | `BaseSplitter`    | `CharacterSplitter`              |
-| `embeddings`   | `BaseEmbeddings`  | `FakeEmbeddings`                 |
-| `vectorstores` | `BaseVectorStore` | `InMemoryVectorStore`            |
-| `retrievers`   | `BaseRetriever`   | `VectorRetriever`                |
-| `generators`   | `BaseGenerator`   | `EchoGenerator`                  |
-| `pipelines`    | `BasePipeline`    | `NaiveRAGPipeline`               |
-| `evaluation`   | —                 | `exact_match`, `token_f1`, `hit_rate` |
+| Package        | Base class        | Built-in implementations |
+| -------------- | ----------------- | ------------------------ |
+| `loaders`      | `BaseLoader`      | `TextLoader`, `PDFLoader`, `HTMLLoader`, `DirectoryLoader` |
+| `splitters`    | `BaseSplitter`    | `RecursiveCharacterSplitter`, `CharacterSplitter` |
+| `embeddings`   | `BaseEmbeddings`  | `HashingEmbeddings`, `SentenceTransformerEmbeddings`, `OpenAIEmbeddings`, `FakeEmbeddings` (tests) |
+| `vectorstores` | `BaseVectorStore` | `InMemoryVectorStore` (saved as JSON) |
+| `retrievers`   | `BaseRetriever`   | `VectorRetriever`, `BM25Retriever`, `HybridRetriever` (reciprocal rank fusion) |
+| `rerankers`    | `BaseReranker`    | `CrossEncoderReranker` |
+| `generators`   | `BaseGenerator`   | `EchoGenerator`, `AnthropicGenerator`, `OpenAIGenerator`, `OllamaGenerator` |
+| `pipelines`    | `BasePipeline`    | `NaiveRAGPipeline`, `HyDEPipeline`, `IterativeRAGPipeline`, `SelfAskPipeline`, `IRCOTPipeline` |
+| `evaluation`   | —                 | `evaluate`; metrics `exact_match`, `contains_answer`, `token_f1`, `hit_rate`, `recall_at_k`, `reciprocal_rank` |
+
+`factory.py` builds every component from the config (`configs/default.yaml`), and
+`build_pipeline` picks the pipeline class by `pipeline.type`. If a reranker is configured,
+`BasePipeline.retrieve` fetches `reranker.fetch_k` candidates and reranks them down to `top_k`.
+`BasePipeline.save` / `load` write the chunks and vectors to `pipeline.index_dir`, and re-embed
+when the saved embedding model differs from the configured one.
+
+## Pipelines
+
+| `pipeline.type` | Class                  | How it combines retrieval and generation |
+| --------------- | ---------------------- | ---------------------------------------- |
+| `naive`         | `NaiveRAGPipeline`     | Retrieve once, then generate (streams) |
+| `hyde`          | `HyDEPipeline`         | Search with an LLM-written hypothetical answer |
+| `iterative`     | `IterativeRAGPipeline` | Re-retrieve with the question plus the previous answer, `max_iterations` rounds |
+| `self_ask`      | `SelfAskPipeline`      | The model asks follow-up questions, each answered from retrieval |
+| `ircot`         | `IRCOTPipeline`        | One reasoning sentence per step, each used as the next search query |
 
 ## Adding a component
 

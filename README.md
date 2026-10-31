@@ -14,7 +14,8 @@ cd EasyRAG
 uv sync
 ```
 
-Optional extras: `uv sync --extra openai`, `--extra huggingface`, `--extra pdf`, or `--extra all`.
+Optional extras: `uv sync --extra openai`, `--extra anthropic`, `--extra huggingface`,
+`--extra pdf`, or `--extra all`.
 
 ## Quickstart
 
@@ -34,7 +35,11 @@ From the command line:
 uv run easyrag index examples/data      # build and save the index
 uv run easyrag ask "What is RAG?"       # or: easyrag ask --docs examples/data "What is RAG?"
 uv run easyrag chat                     # interactive
+uv run easyrag eval data/eval.jsonl     # score retrieval and answers on a question set
 ```
+
+Pipelines (`pipeline.type`): `naive`, `hyde`, `iterative`, `self_ask` and `ircot`. For example,
+`EASYRAG_PIPELINE_TYPE=self_ask uv run easyrag ask "..."`.
 
 See [docs/architecture.md](docs/architecture.md) for how the pieces fit together.
 
@@ -42,6 +47,8 @@ See [docs/architecture.md](docs/architecture.md) for how the pieces fit together
 
 Settings live in [configs/default.yaml](configs/default.yaml). Any value can be overridden with
 an environment variable `EASYRAG_<SECTION>_<KEY>`, for example `EASYRAG_RETRIEVER_TOP_K=8`.
+The defaults run fully offline (hashing embeddings, hybrid search, and an `echo` generator that
+returns the prompt). Set `embedding.provider` and `generator.provider` for real models.
 API keys go in `.env` (copy `.env.example`).
 
 ## Development
