@@ -1,4 +1,5 @@
 from easyrag.evaluation.evaluator import EvalExample, EvalReport, evaluate, load_examples
+from easyrag.evaluation.judge import LLMJudge
 from easyrag.evaluation.metrics import (
     contains_answer,
     exact_match,
@@ -21,4 +22,5 @@ __all__ = [
     "EvalReport",
     "evaluate",
     "load_examples",
+    "LLMJudge",
 ]

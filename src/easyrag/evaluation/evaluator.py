@@ -5,6 +5,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 
+from easyrag.evaluation.judge import LLMJudge
 from easyrag.evaluation.metrics import (
     contains_answer,
     exact_match,
@@ -13,6 +14,7 @@ from easyrag.evaluation.metrics import (
     token_f1,
 )
 from easyrag.pipelines.base import BasePipeline
+from easyrag.prompts import format_context
 
 
 @dataclass
@@ -28,6 +30,7 @@ class EvalResult:
     answer: str
     retrieved_sources: list[str]
     scores: dict[str, float]
+    judge_reasons: dict[str, str] = field(default_factory=dict)
 
 
 @dataclass
@@ -54,6 +57,7 @@ class EvalReport:
                     "expected_sources": r.example.sources,
                     "retrieved_sources": r.retrieved_sources,
                     "scores": r.scores,
+                    "judge_reasons": r.judge_reasons,
                 }
                 for r in self.results
             ],
@@ -77,9 +81,13 @@ def load_examples(path: str | Path) -> list[EvalExample]:
 
 
 def evaluate(
-    pipeline: BasePipeline, examples: list[EvalExample], generate: bool = True
+    pipeline: BasePipeline,
+    examples: list[EvalExample],
+    generate: bool = True,
+    judge: LLMJudge | None = None,
 ) -> EvalReport:
-    """Score each example. With `generate=False` only retrieval is measured (fast, no LLM cost)."""
+    """Score each example. With `generate=False` only retrieval is measured (fast, no LLM cost).
+    With a `judge`, answers are also graded for correctness and faithfulness by an LLM."""
     results = []
     for example in examples:
         if generate:
@@ -92,6 +100,7 @@ def evaluate(
         retrieved = [Path(c.chunk.source).name for c in contexts]
         relevant = [Path(s).name for s in example.sources]
         scores: dict[str, float] = {}
+        reasons: dict[str, str] = {}
         if relevant:
             scores["hit_rate"] = hit_rate(retrieved, relevant)
             scores["mrr"] = reciprocal_rank(retrieved, relevant)
@@ -99,5 +108,15 @@ def evaluate(
             scores["exact_match"] = exact_match(answer, example.answers)
             scores["contains_answer"] = contains_answer(answer, example.answers)
             scores["f1"] = token_f1(answer, example.answers)
-        results.append(EvalResult(example, answer, retrieved, scores))
+        if generate and judge is not None:
+            if example.answers:
+                scores["judge_correct"], reasons["judge_correct"] = judge.correctness(
+                    example.question,
+                    answer,
+                    example.answers,
+                )
+            scores["faithfulness"], reasons["faithfulness"] = judge.faithfulness(
+                answer, format_context(contexts)
+            )
+        results.append(EvalResult(example, answer, retrieved, scores, reasons))
     return EvalReport(results)
