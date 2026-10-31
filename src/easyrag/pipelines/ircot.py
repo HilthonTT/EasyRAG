@@ -1,10 +1,20 @@
 from __future__ import annotations
 
+import re
 from typing import Any
 
 from easyrag.config import Config
-from easyrag.pipelines.base import BasePipeline
+from easyrag.pipelines.base import BasePipeline, merge_contexts
+from easyrag.prompts import (
+    IRCOT_PROMPT,
+    IRCOT_SYSTEM_PROMPT,
+    REASONING_ANSWER_PROMPT,
+    format_context,
+)
 from easyrag.schema import RAGResponse
+
+_ANSWER = re.compile(r"So the answer is:\s*(.+)", re.IGNORECASE)
+_SENTENCE_END = re.compile(r"(?<=[.!?])\s+")
 
 
 class IRCOTPipeline(BasePipeline):
@@ -24,19 +34,46 @@ class IRCOTPipeline(BasePipeline):
         return {"max_iterations": config.pipeline.max_iterations}
 
     def run(self, question: str) -> RAGResponse:
-        # TODO:
-        # 1. contexts = self.retrieve(question)
-        # 2. Up to max_iterations times:
-        #    - prompt with the question, all passages so far and the thoughts so far; ask for the
-        #      next single reasoning sentence
-        #    - stop if it contains the answer marker (see _extract_answer)
-        #    - otherwise retrieve with that sentence (self.retrieve(thought, question)) and merge
-        #      new chunks into contexts, de-duplicated by chunk id, best score first
-        # 3. If no answer marker appeared, generate a final answer from all contexts
-        # 4. Return RAGResponse with metadata={"thoughts": [...]}
-        raise NotImplementedError
+        contexts = self.retrieve(question)
+        thoughts: list[str] = []
+        answer: str | None = None
+
+        for _ in range(self.max_iterations):
+            prompt = IRCOT_PROMPT.format(
+                context=format_context(contexts),
+                question=question,
+                thoughts="\n".join(thoughts) or "(none)",
+            )
+            output = self.generator.generate(prompt, system=IRCOT_SYSTEM_PROMPT).strip()
+            answer = self._extract_answer(output)
+            if answer is not None:
+                thoughts.append(output)
+                break
+            thought = _first_sentence(output)
+            if not thought:
+                break
+            thoughts.append(thought)
+            contexts = merge_contexts(contexts, self.retrieve(thought, question))
+
+        if answer is None:
+            prompt = REASONING_ANSWER_PROMPT.format(
+                context=format_context(contexts),
+                question=question,
+                reasoning="\n".join(thoughts) or "(none)",
+            )
+            answer = self.generator.generate(prompt, system=self.system_prompt)
+
+        return RAGResponse(
+            question=question, answer=answer, contexts=contexts, metadata={"thoughts": thoughts}
+        )
 
     @staticmethod
     def _extract_answer(thought: str) -> str | None:
         """Return the answer if `thought` contains the final-answer marker ("So the answer is:")."""
-        raise NotImplementedError
+        match = _ANSWER.search(thought)
+        return (match.group(1).strip() or None) if match else None
+
+
+def _first_sentence(text: str) -> str:
+    """IRCoT keeps one sentence per step, even when the model writes more."""
+    return _SENTENCE_END.split(" ".join(text.split()), maxsplit=1)[0]

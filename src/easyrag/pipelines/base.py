@@ -149,6 +149,17 @@ class BasePipeline(ABC):
         return [r for r in _leaf_retrievers(self.retriever) if isinstance(r, VectorRetriever)]
 
 
+def merge_contexts(
+    existing: list[RetrievedChunk], new: list[RetrievedChunk]
+) -> list[RetrievedChunk]:
+    """Union of two result lists, de-duplicated by chunk id (keeping the best score), best first."""
+    best: dict[str, RetrievedChunk] = {}
+    for r in [*existing, *new]:
+        if r.chunk.id not in best or r.score > best[r.chunk.id].score:
+            best[r.chunk.id] = r
+    return sorted(best.values(), key=lambda r: -r.score)
+
+
 def _leaf_retrievers(retriever: BaseRetriever) -> list[BaseRetriever]:
     if isinstance(retriever, HybridRetriever):
         return [leaf for r in retriever.retrievers for leaf in _leaf_retrievers(r)]
