@@ -2,16 +2,33 @@
 # Any value can be overridden with an env var: EASYRAG_<SECTION>_<KEY>, e.g. EASYRAG_RETRIEVER_TOP_K=8
 
 splitter:
+  method: recursive     # recursive | character
   chunk_size: 500
   chunk_overlap: 50
 
-retriever:
-  top_k: 4
-
 embedding:
-  provider: fake        # fake | sentence_transformer | openai
+  provider: hash        # hash | sentence_transformer | openai
+  model: ""             # empty = the provider's default model
+  batch_size: 32
+
+retriever:
+  method: hybrid        # vector | bm25 | hybrid
+  top_k: 4
+  rrf_k: 60             # reciprocal rank fusion constant (hybrid only)
+
+reranker:
+  provider: none        # none | cross_encoder
   model: ""
+  fetch_k: 20           # candidates retrieved before reranking down to top_k
 
 generator:
   provider: echo        # echo | anthropic | openai | ollama
   model: ""
+  max_tokens: 16000
+  effort: low           # anthropic only: low | medium | high | xhigh | max
+  base_url: ""          # ollama / OpenAI-compatible servers
+
+pipeline:
+  type: naive           # naive | hyde | iterative | self_ask | ircot
+  max_iterations: 3     # iterative, self_ask and ircot
+  index_dir: .rag_index
