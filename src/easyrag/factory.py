@@ -11,6 +11,7 @@ from easyrag.config import (
     SplitterConfig,
 )
 from easyrag.embeddings import BaseEmbeddings, HashingEmbeddings
+from easyrag.evaluation.judge import LLMJudge
 from easyrag.generators import BaseGenerator, EchoGenerator
 from easyrag.rerankers import BaseReranker
 from easyrag.retrievers import BaseRetriever, BM25Retriever, HybridRetriever, VectorRetriever
@@ -66,7 +67,7 @@ def build_reranker(cfg: RerankerConfig) -> BaseReranker | None:
     raise ValueError(f"Unknown reranker.provider: {cfg.provider!r}")
 
 
-def build_generator(cfg: GeneratorConfig) -> BaseGenerator:
+def build_generator(cfg: GeneratorConfig, section: str = "generator") -> BaseGenerator:
     if cfg.provider == "echo":
         return EchoGenerator()
     if cfg.provider == "anthropic":
@@ -83,7 +84,7 @@ def build_generator(cfg: GeneratorConfig) -> BaseGenerator:
         from easyrag.generators.ollama import DEFAULT_MODEL as OLLAMA_MODEL
 
         return OllamaGenerator(cfg.model or OLLAMA_MODEL, cfg.base_url or DEFAULT_BASE_URL)
-    raise ValueError(f"Unknown generator.provider: {cfg.provider!r}")
+    raise ValueError(f"Unknown {section}.provider: {cfg.provider!r}")
 
 
 def build_components(config: Config) -> dict[str, Any]:
@@ -107,3 +108,10 @@ def build_pipeline(config: Config | None = None) -> Any:
     except KeyError:
         raise ValueError(f"Unknown pipeline.type: {config.pipeline.type!r}") from None
     return pipeline_cls.from_config(config)
+
+
+def build_judge(config: Config) -> LLMJudge:
+    """LLM grader for `easyrag eval --judge`; uses `generator` when `judge.provider` is empty."""
+    if config.judge.provider:
+        return LLMJudge(build_generator(config.judge, "judge"))
+    return LLMJudge(build_generator(config.generator))

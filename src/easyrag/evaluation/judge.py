@@ -32,7 +32,7 @@ class LLMJudge:
             return 0.0, f"unparseable judge reply: {raw[:200]}"
         try:
             data = json.loads(match.group())
-            return float(data["score"]), str(data.get("reason", ""))
+            return min(max(float(data["score"]), 0.0), 1.0), str(data.get("reason", ""))
         except (ValueError, KeyError, TypeError):
             return 0.0, f"unparseable judge reply: {raw[:200]}"
 

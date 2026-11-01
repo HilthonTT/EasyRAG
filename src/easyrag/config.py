@@ -62,6 +62,9 @@ class Config:
     retriever: RetrieverConfig = field(default_factory=RetrieverConfig)
     reranker: RerankerConfig = field(default_factory=RerankerConfig)
     generator: GeneratorConfig = field(default_factory=GeneratorConfig)
+    judge: GeneratorConfig = field(
+        default_factory=lambda: GeneratorConfig(provider="")
+    )  # "" = same as generator
     pipeline: PipelineConfig = field(default_factory=PipelineConfig)
 
     @classmethod

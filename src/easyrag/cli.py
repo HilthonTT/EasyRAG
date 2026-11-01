@@ -9,7 +9,7 @@ import sys
 from pathlib import Path
 
 from easyrag.config import Config
-from easyrag.factory import build_pipeline
+from easyrag.factory import build_judge, build_pipeline
 from easyrag.loaders.directory import DirectoryLoader
 from easyrag.pipelines.base import BasePipeline
 from easyrag.schema import RetrievedChunk
@@ -43,12 +43,18 @@ def main(argv: list[str] | None = None) -> None:
     ev.add_argument("dataset", help='JSONL: {"question", "answers": [...], "sources": [...]}')
     ev.add_argument("--docs", help="Index these documents instead of loading the saved index")
     ev.add_argument("--retrieval-only", action="store_true", help="Skip generation (no LLM)")
+    ev.add_argument(
+        "--judge", action="store_true", help="Also grade correctness and faithfulness with an LLM"
+    )
     ev.add_argument("--output", help="Write per-question results to this JSON file")
 
     args = parser.parse_args(argv)
+    if getattr(args, "judge", False) and args.retrieval_only:
+        parser.error("--judge needs generated answers; drop --retrieval-only")
     try:
         config = Config.load(args.config)
         pipeline = build_pipeline(config)
+        judge = build_judge(config) if getattr(args, "judge", False) else None
     except (ValueError, ImportError, OSError) as e:  # bad config value, missing extra, no file
         parser.error(str(e))
     index_dir = Path(args.index_dir or config.pipeline.index_dir)
@@ -79,7 +85,9 @@ def main(argv: list[str] | None = None) -> None:
     elif args.command == "eval":
         from easyrag.evaluation import evaluate, load_examples
 
-        report = evaluate(pipeline, load_examples(args.dataset), generate=not args.retrieval_only)
+        report = evaluate(
+            pipeline, load_examples(args.dataset), generate=not args.retrieval_only, judge=judge
+        )
         for name, value in report.summary.items():
             print(f"{name:>16}: {value:.3f}")
         print(f"{'questions':>16}: {len(report.results)}")
