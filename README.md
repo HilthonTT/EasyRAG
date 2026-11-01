@@ -1,6 +1,12 @@
-# EasyRAG
+<p align="center">
+  <img src="assets/logo.svg" width="128" alt="EasyRAG logo">
+</p>
 
-A simple, modular toolkit for Retrieval-Augmented Generation (RAG) research in Python.
+<h1 align="center">EasyRAG</h1>
+
+<p align="center">
+  A simple, modular toolkit for Retrieval-Augmented Generation (RAG) research in Python.
+</p>
 
 Every stage of the pipeline (loading, splitting, embedding, storing, retrieving and generating)
 is a small swappable component behind an abstract base class, so you can try new methods
