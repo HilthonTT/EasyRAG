@@ -16,7 +16,7 @@ class OllamaGenerator(BaseGenerator):
         self, model: str = DEFAULT_MODEL, base_url: str = DEFAULT_BASE_URL, timeout: float = 300
     ):
         self.model = model
-        self.base_url = base_url
+        self.base_url = base_url.rstrip("/")
         self.timeout = timeout
 
     def _request(self, prompt: str, system: str | None, stream: bool) -> Any:
