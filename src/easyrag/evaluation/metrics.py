@@ -25,7 +25,8 @@ def exact_match(prediction: str, references: list[str]) -> float:
 def contains_answer(prediction: str, references: list[str]) -> float:
     """1.0 if any reference appears in the prediction. Fairer than EM for chatty LLM answers."""
     pred = normalize_answer(prediction)
-    return float(any(normalize_answer(ref) in pred for ref in references if ref.strip()))
+    refs = [r for r in (normalize_answer(ref) for ref in references) if r]  # "The" -> ""
+    return float(any(ref in pred for ref in refs))
 
 
 def token_f1(prediction: str, references: list[str]) -> float:

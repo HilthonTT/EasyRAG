@@ -1,4 +1,4 @@
-from easyrag.evaluation import exact_match, hit_rate, token_f1
+from easyrag.evaluation import contains_answer, exact_match, hit_rate, token_f1
 
 
 def test_exact_match_normalizes() -> None:
@@ -20,3 +20,8 @@ def test_recall_at_k_zero() -> None:
 
     assert recall_at_k(["a"], ["a"], k=0) == 0.0
     assert recall_at_k(["a"], ["a"]) == 1.0
+
+
+def test_contains_answer_ignores_references_that_normalize_to_nothing() -> None:
+    assert contains_answer("xyz", ["The", "."]) == 0.0
+    assert contains_answer("It is Paris.", ["The", "Paris"]) == 1.0

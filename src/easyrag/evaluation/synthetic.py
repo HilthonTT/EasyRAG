@@ -80,7 +80,8 @@ def draft_examples(
             if parsed is None:
                 continue
             question, answer = parsed
-            if normalize_answer(answer) not in normalize_answer(chunk.content):
+            norm_answer = normalize_answer(answer)
+            if not norm_answer or norm_answer not in normalize_answer(chunk.content):
                 continue
             if normalize_answer(question) in seen:
                 continue
