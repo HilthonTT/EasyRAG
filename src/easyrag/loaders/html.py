@@ -25,6 +25,8 @@ class _TextExtractor(HTMLParser):
     def handle_starttag(self, tag: str, attrs: list[tuple[str, str | None]]) -> None:
         if tag == "title":
             self._in_title = True
+        if tag == "body":  # </head> is optional in HTML; never let it hide the body
+            self._skip_depth = 0
         if tag in _SKIP_TAGS:
             self._skip_depth += 1
         elif tag in _BLOCK_TAGS:

@@ -24,3 +24,11 @@ def test_directory_loader_tolerates_non_utf8_file(tmp_path: Path) -> None:
     docs = DirectoryLoader(tmp_path).load()
 
     assert sorted(Path(d.metadata["source"]).name for d in docs) == ["good.txt", "latin1.txt"]
+
+
+def test_html_loader_keeps_body_when_head_is_not_closed(tmp_path: Path) -> None:
+    page = tmp_path / "page.html"
+    page.write_text("<html><head><title>T</title><body><p>Hello body</p></body></html>")
+    doc = HTMLLoader(page).load()[0]
+    assert doc.content == "Hello body"
+    assert doc.metadata["title"] == "T"
