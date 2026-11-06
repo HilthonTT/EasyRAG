@@ -32,3 +32,15 @@ def test_html_loader_keeps_body_when_head_is_not_closed(tmp_path: Path) -> None:
     doc = HTMLLoader(page).load()[0]
     assert doc.content == "Hello body"
     assert doc.metadata["title"] == "T"
+
+
+def test_html_loader_ignores_svg_titles(tmp_path: Path) -> None:
+    page = tmp_path / "page.html"
+    page.write_text(
+        "<html><head><title>Page</title></head><body>"
+        "<svg><title>menu icon</title><path d='M0'/></svg><p>Hello</p></body></html>",
+        encoding="utf-8",
+    )
+    doc = HTMLLoader(page).load()[0]
+    assert doc.metadata["title"] == "Page"
+    assert doc.content == "Hello"

@@ -20,11 +20,15 @@ class _TextExtractor(HTMLParser):
         self.parts: list[str] = []
         self.title = ""
         self._skip_depth = 0
+        self._svg_depth = 0
         self._in_title = False
 
     def handle_starttag(self, tag: str, attrs: list[tuple[str, str | None]]) -> None:
-        if tag == "title":
-            self._in_title = True
+        if tag == "svg":
+            self._svg_depth += 1
+        if tag == "title":  # inside <svg> it is an icon label, not text or the page title
+            self._in_title = not self._svg_depth
+            self._skip_depth += bool(self._svg_depth)
         if tag == "body":  # </head> is optional in HTML; never let it hide the body
             self._skip_depth = 0
         if tag in _SKIP_TAGS:
@@ -33,8 +37,12 @@ class _TextExtractor(HTMLParser):
             self.parts.append("\n")
 
     def handle_endtag(self, tag: str) -> None:
+        if tag == "svg" and self._svg_depth:
+            self._svg_depth -= 1
         if tag == "title":
             self._in_title = False
+            if self._svg_depth and self._skip_depth:
+                self._skip_depth -= 1
         if tag in _SKIP_TAGS and self._skip_depth:
             self._skip_depth -= 1
         elif tag in _BLOCK_TAGS:
