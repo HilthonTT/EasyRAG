@@ -19,7 +19,8 @@ from easyrag.splitters.recursive import RecursiveCharacterSplitter
 
 P = TypeVar("P", bound="BasePipeline")
 
-INDEX_FORMAT_VERSION = 1
+# 2: vectors in vectors_<i>.npz (version 1 used JSON, which load() still reads).
+INDEX_FORMAT_VERSION = 2
 
 
 class BasePipeline(ABC):
@@ -109,7 +110,8 @@ class BasePipeline(ABC):
                 f.write(json.dumps(chunk.to_dict(), ensure_ascii=False) + "\n")
         embeddings = []
         for i, retriever in enumerate(self._vector_retrievers()):
-            retriever.vectorstore.save(path / f"vectors_{i}.json")
+            retriever.vectorstore.save(path / f"vectors_{i}.npz")
+            (path / f"vectors_{i}.json").unlink(missing_ok=True)  # stale version-1 file
             embeddings.append(retriever.embeddings.name)
         manifest = {
             "version": INDEX_FORMAT_VERSION,
@@ -136,11 +138,11 @@ class BasePipeline(ABC):
 
         vector_retrievers = self._vector_retrievers()
         for i, retriever in enumerate(vector_retrievers):
-            vectors_path = path / f"vectors_{i}.json"
+            vectors_path = _vectors_file(path, i)
             same_model = (
                 i < len(saved_embeddings) and saved_embeddings[i] == retriever.embeddings.name
             )
-            if vectors_path.exists() and same_model:
+            if vectors_path is not None and same_model:
                 retriever.vectorstore.load(vectors_path, by_id)
             else:
                 retriever.add_chunks(chunks)  # different model: re-embed
@@ -166,6 +168,15 @@ def merge_contexts(
         if r.chunk.id not in best or r.score > best[r.chunk.id].score:
             best[r.chunk.id] = r
     return sorted(best.values(), key=lambda r: -r.score)
+
+
+def _vectors_file(index_dir: Path, i: int) -> Path | None:
+    """The saved vectors of the i-th vector retriever: .npz, or .json from format version 1."""
+    for suffix in (".npz", ".json"):
+        candidate = index_dir / f"vectors_{i}{suffix}"
+        if candidate.exists():
+            return candidate
+    return None
 
 
 def _leaf_retrievers(retriever: BaseRetriever) -> list[BaseRetriever]:

@@ -17,7 +17,7 @@ Question ─────────────► Retriever ◄─────
 | `loaders`      | `BaseLoader`      | `TextLoader`, `PDFLoader`, `HTMLLoader`, `DirectoryLoader` |
 | `splitters`    | `BaseSplitter`    | `RecursiveCharacterSplitter`, `CharacterSplitter` |
 | `embeddings`   | `BaseEmbeddings`  | `HashingEmbeddings`, `SentenceTransformerEmbeddings`, `OpenAIEmbeddings`, `FakeEmbeddings` (tests) |
-| `vectorstores` | `BaseVectorStore` | `InMemoryVectorStore` (saved as JSON) |
+| `vectorstores` | `BaseVectorStore` | `InMemoryVectorStore` (saved as NumPy `.npz`) |
 | `retrievers`   | `BaseRetriever`   | `VectorRetriever`, `BM25Retriever`, `HybridRetriever` (reciprocal rank fusion) |
 | `rerankers`    | `BaseReranker`    | `CrossEncoderReranker` |
 | `generators`   | `BaseGenerator`   | `EchoGenerator`, `AnthropicGenerator`, `OpenAIGenerator`, `OllamaGenerator` |
