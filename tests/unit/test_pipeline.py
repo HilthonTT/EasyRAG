@@ -1,3 +1,7 @@
+from pathlib import Path
+
+import pytest
+
 from easyrag import Config, Document, HyDEPipeline, NaiveRAGPipeline
 from easyrag.rerankers import BaseReranker
 from easyrag.schema import RetrievedChunk
@@ -33,3 +37,18 @@ def test_hyde_reranks_against_the_original_question(sample_documents: list[Docum
 
     # Retrieval searches with the hypothetical passage; the reranker must see only the question.
     assert reranker.queries == ["What is the capital of France?"]
+
+
+def test_load_refuses_a_non_empty_pipeline(
+    sample_documents: list[Document], tmp_path: Path
+) -> None:
+    pipeline = NaiveRAGPipeline.from_config(Config())
+    pipeline.index(sample_documents)
+    pipeline.save(tmp_path)
+
+    with pytest.raises(RuntimeError, match="already holds 3 chunks"):
+        pipeline.load(tmp_path)
+
+    fresh = NaiveRAGPipeline.from_config(Config())
+    assert fresh.load(tmp_path) == 3
+    assert [c.id for c in fresh.chunks] == [c.id for c in pipeline.chunks]

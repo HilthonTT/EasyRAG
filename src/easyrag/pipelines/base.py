@@ -116,6 +116,10 @@ class BasePipeline(ABC):
 
     def load(self, path: str | Path) -> int:
         """Load a saved index into this (empty) pipeline. Returns the number of chunks."""
+        if self.chunks:
+            raise RuntimeError(
+                f"Pipeline already holds {len(self.chunks)} chunks; load() into a fresh pipeline"
+            )
         path = Path(path)
         manifest_path = path / "manifest.json"
         if not manifest_path.exists():
