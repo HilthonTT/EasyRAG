@@ -47,3 +47,11 @@ def test_respects_per_source_and_min_chars() -> None:
     chunks = [_chunk("a.txt") for _ in range(5)] + [_chunk("b.txt", "too short")]
     examples = draft_examples(chunks, generator, per_source=2)
     assert [e.sources for e in examples] == [["a.txt"], ["a.txt"]]
+
+
+def test_sources_keep_folders_that_disambiguate_same_names() -> None:
+    reply = '{"question": "Q%d?", "answer": "1889"}'
+    generator = QueueGenerator([reply % i for i in range(2)])
+    chunks = [_chunk("docs/a/intro.md"), _chunk("docs/b/intro.md")]
+    examples = draft_examples(chunks, generator, per_source=1)
+    assert [e.sources for e in examples] == [["a/intro.md"], ["b/intro.md"]]

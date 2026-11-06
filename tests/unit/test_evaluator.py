@@ -1,5 +1,6 @@
 from easyrag import Config, Document, NaiveRAGPipeline
 from easyrag.evaluation import EvalExample, LLMJudge, evaluate
+from easyrag.evaluation.evaluator import source_matches
 from easyrag.generators.base import BaseGenerator
 from easyrag.pipelines import HyDEPipeline
 
@@ -60,3 +61,28 @@ def test_evaluate_with_judge(sample_documents: list[Document]) -> None:
     assert report.summary["judge_correct"] == 1.0
     assert all("faithfulness" in r.scores for r in report.results)
     assert report.results[0].judge_reasons["faithfulness"] == "ok"
+
+
+def test_source_matches_trailing_path_parts() -> None:
+    assert source_matches("data/docs/a/intro.md", "intro.md")
+    assert source_matches(r"data\docs\a\intro.md", "a/intro.md")
+    assert not source_matches("data/docs/a/intro.md", "b/intro.md")
+    assert not source_matches("data/docs/myintro.md", "intro.md")
+    assert not source_matches("intro.md", "")
+
+
+def test_same_file_name_in_different_folders_is_not_a_hit() -> None:
+    docs = [
+        Document(content="Paris is the capital of France.", metadata={"source": "eu/capitals.txt"}),
+        Document(
+            content="Tokyo is the capital of Japan.", metadata={"source": "asia/capitals.txt"}
+        ),
+    ]
+    pipeline = _pipeline(NaiveRAGPipeline, docs)
+    examples = [
+        EvalExample("What is the capital of France?", sources=["asia/capitals.txt"]),
+        EvalExample("What is the capital of France?", sources=["eu/capitals.txt"]),
+    ]
+    report = evaluate(pipeline, examples, generate=False)
+    assert [r.scores["hit_rate"] for r in report.results] == [0.0, 1.0]
+    assert report.results[1].retrieved_sources == ["eu/capitals.txt"]

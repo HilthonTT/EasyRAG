@@ -7,6 +7,7 @@ paraphrased, multi-hop and unanswerable questions by hand before you trust the n
 from __future__ import annotations
 
 import json
+import os
 import random
 import re
 from collections import defaultdict
@@ -66,6 +67,7 @@ def draft_examples(
         if len(chunk.content.strip()) >= min_chars:
             by_source[chunk.source].append(chunk)
 
+    names = _relative_sources(list(by_source))
     examples: list[EvalExample] = []
     seen: set[str] = set()
     for source in sorted(by_source):
@@ -86,9 +88,19 @@ def draft_examples(
             if normalize_answer(question) in seen:
                 continue
             seen.add(normalize_answer(question))
-            examples.append(EvalExample(question, answers=[answer], sources=[Path(source).name]))
+            examples.append(EvalExample(question, answers=[answer], sources=[names[source]]))
             kept += 1
     return examples
+
+
+def _relative_sources(sources: list[str]) -> dict[str, str]:
+    """Each source relative to their common folder: short, yet unambiguous when two files in
+    different folders share a name (see `source_matches`)."""
+    try:
+        root = os.path.commonpath([str(Path(s).parent) for s in sources]) if sources else ""
+    except ValueError:  # mixed absolute/relative paths or drives
+        return {s: Path(s).name for s in sources}
+    return {s: Path(os.path.relpath(s, root or ".")).as_posix() for s in sources}
 
 
 def write_examples(examples: list[EvalExample], path: str | Path) -> None:

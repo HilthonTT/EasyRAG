@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import json
 from dataclasses import dataclass, field
-from pathlib import Path
+from pathlib import Path, PurePosixPath
 from typing import Any
 
 from easyrag.evaluation.judge import LLMJudge
@@ -80,6 +80,24 @@ def load_examples(path: str | Path) -> list[EvalExample]:
     return examples
 
 
+def source_matches(retrieved: str, expected: str) -> bool:
+    """True if `expected` names the same file as `retrieved`, matching trailing path parts.
+
+    "intro.md" matches any file called intro.md; "guide/intro.md" only the one under guide/.
+    Backslashes are treated as separators, so eval sets work across Windows and POSIX.
+    """
+    want = PurePosixPath(expected.replace("\\", "/")).parts
+    have = PurePosixPath(retrieved.replace("\\", "/")).parts
+    want = tuple(p for p in want if p != ".")
+    return bool(want) and have[-len(want) :] == want
+
+
+def _match_sources(retrieved: list[str], expected: list[str]) -> list[str]:
+    """Replace each retrieved source by the expected source it matches, so the id-based metrics
+    can compare the two lists directly."""
+    return [next((e for e in expected if source_matches(r, e)), r) for r in retrieved]
+
+
 def evaluate(
     pipeline: BasePipeline,
     examples: list[EvalExample],
@@ -97,13 +115,13 @@ def evaluate(
             query = pipeline.search_query(example.question)
             contexts, answer = pipeline.retrieve(query, example.question), ""
 
-        retrieved = [Path(c.chunk.source).name for c in contexts]
-        relevant = [Path(s).name for s in example.sources]
+        retrieved = [Path(c.chunk.source).as_posix() for c in contexts]
         scores: dict[str, float] = {}
         reasons: dict[str, str] = {}
-        if relevant:
-            scores["hit_rate"] = hit_rate(retrieved, relevant)
-            scores["mrr"] = reciprocal_rank(retrieved, relevant)
+        if example.sources:
+            matched = _match_sources(retrieved, example.sources)
+            scores["hit_rate"] = hit_rate(matched, example.sources)
+            scores["mrr"] = reciprocal_rank(matched, example.sources)
         if generate and example.answers:
             scores["exact_match"] = exact_match(answer, example.answers)
             scores["contains_answer"] = contains_answer(answer, example.answers)
