@@ -6,6 +6,14 @@ DEFAULT_SEPARATORS = ["\n\n", "\n", ". ", "? ", "! ", "; ", ", ", " ", ""]
 
 
 class RecursiveCharacterSplitter(BaseSplitter):
+    """Split on the coarsest separator that keeps pieces under `chunk_size` (paragraphs, then
+    lines, sentences, words, characters), then merge neighbouring pieces back up to `chunk_size`.
+
+    Overlap is made of whole pieces: a chunk starts with the trailing pieces of the previous one
+    that fit in `chunk_overlap`. A single piece longer than `chunk_overlap` (a long sentence, say)
+    is never cut to make overlap, so such chunks can have none.
+    """
+
     def __init__(
         self, chunk_size: int = 800, chunk_overlap: int = 100, separators: list[str] | None = None
     ):
