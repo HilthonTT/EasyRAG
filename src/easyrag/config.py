@@ -7,6 +7,8 @@ from typing import Any
 
 import yaml
 
+# Optional, relative to the working directory. The dataclass defaults below are the real defaults
+# (configs/default.yaml mirrors them, checked by a test), so running from elsewhere is the same.
 DEFAULT_CONFIG_PATH = Path("configs/default.yaml")
 ENV_PREFIX = "EASYRAG"
 
@@ -14,8 +16,8 @@ ENV_PREFIX = "EASYRAG"
 @dataclass
 class SplitterConfig:
     method: str = "recursive"  # recursive | character
-    chunk_size: int = 800
-    chunk_overlap: int = 100
+    chunk_size: int = 500
+    chunk_overlap: int = 50
 
 
 @dataclass
