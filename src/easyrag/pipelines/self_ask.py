@@ -26,6 +26,8 @@ class SelfAskPipeline(BasePipeline):
     from retrieved passages, and the answers are fed back until the model writes the final answer.
     """
 
+    retrieval_needs_generation = True
+
     def __init__(self, *args: Any, max_iterations: int = 3, **kwargs: Any) -> None:
         super().__init__(*args, **kwargs)
         self.max_iterations = max(1, max_iterations)

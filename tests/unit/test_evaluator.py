@@ -1,8 +1,10 @@
+import pytest
+
 from easyrag import Config, Document, NaiveRAGPipeline
 from easyrag.evaluation import EvalExample, LLMJudge, evaluate
 from easyrag.evaluation.evaluator import source_matches
 from easyrag.generators.base import BaseGenerator
-from easyrag.pipelines import HyDEPipeline
+from easyrag.pipelines import HyDEPipeline, IterativeRAGPipeline
 
 
 class StubGenerator(BaseGenerator):
@@ -86,3 +88,10 @@ def test_same_file_name_in_different_folders_is_not_a_hit() -> None:
     report = evaluate(pipeline, examples, generate=False)
     assert [r.scores["hit_rate"] for r in report.results] == [0.0, 1.0]
     assert report.results[1].retrieved_sources == ["eu/capitals.txt"]
+
+
+def test_retrieval_only_rejects_multistep_pipelines(sample_documents: list[Document]) -> None:
+    pipeline = IterativeRAGPipeline.from_config(Config())
+    pipeline.index(sample_documents)
+    with pytest.raises(ValueError, match="retrieves based on generated text"):
+        evaluate(pipeline, [EvalExample("q", sources=["france.txt"])], generate=False)

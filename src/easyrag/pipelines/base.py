@@ -4,7 +4,7 @@ import json
 from abc import ABC, abstractmethod
 from collections.abc import Iterator
 from pathlib import Path
-from typing import Any, TypeVar
+from typing import Any, ClassVar, TypeVar
 
 from easyrag.config import Config
 from easyrag.generators.base import BaseGenerator
@@ -28,6 +28,10 @@ class BasePipeline(ABC):
     Subclasses (naive, HyDE, iterative, ...) only decide how retrieval and generation are
     combined in `run`.
     """
+
+    # True when later retrievals depend on generated text (iterative, self_ask, ircot), so
+    # retrieval cannot be measured without running the LLM.
+    retrieval_needs_generation: ClassVar[bool] = False
 
     def __init__(
         self,

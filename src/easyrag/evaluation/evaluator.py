@@ -106,6 +106,12 @@ def evaluate(
 ) -> EvalReport:
     """Score each example. With `generate=False` only retrieval is measured (fast, no LLM cost).
     With a `judge`, answers are also graded for correctness and faithfulness by an LLM."""
+    if not generate and pipeline.retrieval_needs_generation:
+        raise ValueError(
+            f"{type(pipeline).__name__} retrieves based on generated text, so retrieval-only "
+            "scores would only reflect its first search. Evaluate with generation, or use "
+            "pipeline.type naive for retrieval-only numbers."
+        )
     results = []
     for example in examples:
         if generate:

@@ -85,9 +85,12 @@ def main(argv: list[str] | None = None) -> None:
     elif args.command == "eval":
         from easyrag.evaluation import evaluate, load_examples
 
-        report = evaluate(
-            pipeline, load_examples(args.dataset), generate=not args.retrieval_only, judge=judge
-        )
+        try:
+            report = evaluate(
+                pipeline, load_examples(args.dataset), generate=not args.retrieval_only, judge=judge
+            )
+        except ValueError as e:
+            parser.error(str(e))
         for name, value in report.summary.items():
             print(f"{name:>16}: {value:.3f}")
         print(f"{'questions':>16}: {len(report.results)}")
