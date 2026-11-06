@@ -92,10 +92,15 @@ class Config:
             if not hasattr(config, section_name):
                 raise ValueError(f"Unknown config section: {section_name}")
             section = getattr(config, section_name)
+            if values is not None and not isinstance(values, dict):
+                raise ValueError(f"Config section {section_name} must be a mapping of keys")
             for key, value in (values or {}).items():
                 if not hasattr(section, key):
                     raise ValueError(f"Unknown config key: {section_name}.{key}")
-                setattr(section, key, _coerce(value, type(getattr(section, key))))
+                try:
+                    setattr(section, key, _coerce(value, type(getattr(section, key))))
+                except ValueError as e:
+                    raise ValueError(f"Invalid config value for {section_name}.{key}: {e}") from e
         return config
 
     def apply_env_overrides(self) -> None:
@@ -103,22 +108,37 @@ class Config:
         for section in fields(self):
             current = getattr(self, section.name)
             for f in fields(current):
-                env_value = os.environ.get(f"{ENV_PREFIX}_{section.name}_{f.name}".upper())
+                name = f"{ENV_PREFIX}_{section.name}_{f.name}".upper()
+                env_value = os.environ.get(name)
                 if env_value is not None:
-                    setattr(current, f.name, _coerce(env_value, type(getattr(current, f.name))))
+                    try:
+                        value = _coerce(env_value, type(getattr(current, f.name)))
+                    except ValueError as e:
+                        raise ValueError(f"Invalid value for {name}: {e}") from e
+                    setattr(current, f.name, value)
 
     def to_dict(self) -> dict[str, Any]:
         return asdict(self)
 
 
 def _coerce(value: Any, target: type) -> Any:
+    if target is bool:
+        return value if isinstance(value, bool) else str(value).strip().lower() in _TRUE
+    if isinstance(value, bool):  # bool is an int subclass: `top_k: true` must not pass as 1
+        raise ValueError(f"expected {target.__name__}, got {value!r}")
     if isinstance(value, target):
         return value
-    if target is bool:
-        return str(value).strip().lower() in {"1", "true", "yes", "on"}
     if value is None:
         return target()
-    return target(value)
+    if target is int and isinstance(value, float) and not value.is_integer():
+        raise ValueError(f"expected an integer, got {value!r}")  # int(2.7) would silently be 2
+    try:
+        return target(value)
+    except (TypeError, ValueError) as e:
+        raise ValueError(f"expected {target.__name__}, got {value!r}") from e
+
+
+_TRUE = {"1", "true", "yes", "on"}
 
 
 def load_dotenv(path: str | Path = ".env") -> None:
