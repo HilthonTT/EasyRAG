@@ -33,3 +33,14 @@ def test_bm25_matches_single_quoted_word() -> None:
     retriever = BM25Retriever()
     retriever.add_chunks([Chunk(content="The city 'Paris' is lovely", document_id="d")])
     assert len(retriever.retrieve("paris")) == 1
+
+
+def test_rrf_counts_a_chunk_once_per_list() -> None:
+    from easyrag.retrievers.hybrid import reciprocal_rank_fusion
+    from easyrag.schema import RetrievedChunk
+
+    a, b = Chunk("a", "d"), Chunk("b", "d")
+    fused = reciprocal_rank_fusion(
+        [[RetrievedChunk(a, 1), RetrievedChunk(a, 1)], [RetrievedChunk(b, 1)]]
+    )
+    assert fused[0].score == fused[1].score

@@ -22,7 +22,11 @@ def reciprocal_rank_fusion(
     chunks: dict[str, Chunk] = {}
 
     for results, weight in zip(result_lists, weights, strict=True):
+        counted: set[str] = set()
         for rank, result in enumerate(results, start=1):
+            if result.chunk.id in counted:  # a duplicate in one list must not add score twice
+                continue
+            counted.add(result.chunk.id)
             scores[result.chunk.id] += weight / (rrf_k + rank)
             chunks[result.chunk.id] = result.chunk
 

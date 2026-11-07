@@ -85,8 +85,17 @@ class BasePipeline(ABC):
         return response.contexts, iter([response.answer])
 
     def index(self, documents: list[Document]) -> int:
-        """Split and index documents. Returns the number of chunks added."""
-        chunks = self.splitter.split_documents(documents)
+        """Split and index documents. Returns the number of chunks added.
+
+        Chunk ids come from content, so chunks already indexed (re-indexing the same documents)
+        are skipped instead of being stored, and retrieved, twice.
+        """
+        seen = {c.id for c in self.chunks}
+        chunks = []
+        for chunk in self.splitter.split_documents(documents):
+            if chunk.id not in seen:
+                seen.add(chunk.id)
+                chunks.append(chunk)
         self.retriever.add_chunks(chunks)
         self.chunks.extend(chunks)
         return len(chunks)

@@ -52,3 +52,18 @@ def test_load_refuses_a_non_empty_pipeline(
     fresh = NaiveRAGPipeline.from_config(Config())
     assert fresh.load(tmp_path) == 3
     assert [c.id for c in fresh.chunks] == [c.id for c in pipeline.chunks]
+
+
+def test_reindexing_the_same_documents_adds_no_duplicates() -> None:
+    config = Config()
+    config.retriever.method = "vector"
+    pipeline = NaiveRAGPipeline.from_config(config)
+    docs = [
+        Document(content="Paris is the capital of France."),
+        Document(content="Berlin is the capital of Germany."),
+    ]
+    assert pipeline.index(docs) == 2
+    assert pipeline.index(docs[:1]) == 0
+    assert len(pipeline.chunks) == 2
+    ids = [r.chunk.id for r in pipeline.retrieve("capital of France")]
+    assert len(ids) == len(set(ids)) == 2
