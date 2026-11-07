@@ -49,3 +49,8 @@ def test_build_judge_falls_back_to_generator() -> None:
     config.judge.provider = "bogus"
     with pytest.raises(ValueError, match="Unknown judge.provider: 'bogus'"):
         build_judge(config)
+
+
+def test_cli_index_reports_missing_path_without_traceback(tmp_path: Path) -> None:
+    with pytest.raises(SystemExit, match="No such file or directory"):
+        main(["--index-dir", str(tmp_path / "idx"), "index", str(tmp_path / "missing")])

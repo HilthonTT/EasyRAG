@@ -105,7 +105,10 @@ def _add_query_options(p: argparse.ArgumentParser) -> None:
 
 
 def _index(pipeline: BasePipeline, docs: str, glob: str = "**/*") -> tuple[int, int]:
-    documents = DirectoryLoader(docs, glob=glob).load()
+    try:
+        documents = DirectoryLoader(docs, glob=glob).load()
+    except (FileNotFoundError, ImportError) as e:  # bad path, or a .pdf without the pdf extra
+        raise SystemExit(str(e)) from None
     if not documents:
         raise SystemExit(f"No supported documents found in {docs}")
     return len(documents), pipeline.index(documents)
