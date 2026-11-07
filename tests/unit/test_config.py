@@ -25,11 +25,17 @@ def test_from_dict_rejects_section_that_is_not_a_mapping() -> None:
         ({"retriever": {"top_k": True}}, "retriever.top_k"),
         ({"splitter": {"chunk_size": 2.7}}, "splitter.chunk_size"),
         ({"retriever": {"top_k": "many"}}, "retriever.top_k"),
+        ({"splitter": {"method": ["recursive"]}}, "splitter.method"),
     ],
 )
 def test_from_dict_rejects_values_of_the_wrong_type(raw: dict[str, Any], match: str) -> None:
     with pytest.raises(ValueError, match=match):
         Config.from_dict(raw)
+
+
+def test_from_dict_rejects_a_top_level_that_is_not_a_mapping() -> None:
+    with pytest.raises(ValueError, match="mapping"):
+        Config.from_dict(["splitter"])  # type: ignore[arg-type]
 
 
 def test_from_dict_accepts_whole_floats_and_numeric_strings() -> None:

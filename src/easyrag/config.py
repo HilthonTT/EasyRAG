@@ -88,6 +88,8 @@ class Config:
 
     @classmethod
     def from_dict(cls, raw: dict[str, Any]) -> Config:
+        if not isinstance(raw, dict):
+            raise ValueError("Config must be a mapping of sections")
         config = cls()
         for section_name, values in raw.items():
             if not hasattr(config, section_name):
@@ -131,6 +133,8 @@ def _coerce(value: Any, target: type) -> Any:
         return value
     if value is None:
         return target()
+    if isinstance(value, dict | list):  # str(["a"]) would silently become "['a']"
+        raise ValueError(f"expected {target.__name__}, got {value!r}")
     if target is int and isinstance(value, float) and not value.is_integer():
         raise ValueError(f"expected an integer, got {value!r}")  # int(2.7) would silently be 2
     try:
