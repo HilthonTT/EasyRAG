@@ -57,6 +57,25 @@ The defaults run fully offline (hashing embeddings, hybrid search, and an `echo`
 returns the prompt). Set `embedding.provider` and `generator.provider` for real models.
 API keys go in `.env` (copy `.env.example`).
 
+## Docker
+
+Put your documents in `data/`, then from the repo root:
+
+```bash
+docker compose -f docker/docker-compose.yaml run --rm easyrag index /app/data
+docker compose -f docker/docker-compose.yaml run --rm easyrag ask "What is RAG?"
+docker compose -f docker/docker-compose.yaml run --rm easyrag chat
+```
+
+The index is saved to `data/.rag_index`, so it survives the container. `configs/` and `.env`
+are picked up as usual. Optional extras are installed at build time, e.g.
+`EASYRAG_EXTRAS="anthropic pdf" docker compose -f docker/docker-compose.yaml build`.
+For a local model, see the Ollama notes at the top of
+[docker/docker-compose.yaml](docker/docker-compose.yaml).
+
+The container runs as uid 1000. On Linux, if your user has a different uid, make `data/`
+writable for it (or add `user: "${UID}:${GID}"` to the service).
+
 ## Development
 
 ```bash

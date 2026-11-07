@@ -1,10 +1,43 @@
+# Run from the repo root. Put documents in ./data (the index is saved to ./data/.rag_index).
+#   docker compose -f docker/docker-compose.yaml run --rm easyrag index /app/data
+#   docker compose -f docker/docker-compose.yaml run --rm easyrag ask "What is RAG?"
+#   docker compose -f docker/docker-compose.yaml run --rm easyrag chat
+#
+# Optional extras are baked in at build time, e.g. EASYRAG_EXTRAS="anthropic pdf".
+# Provider settings come from configs/default.yaml and .env (EASYRAG_<SECTION>_<KEY>).
+#
+# Local Ollama model: start it, pull a model, then point the generator at it in .env:
+#   docker compose -f docker/docker-compose.yaml --profile ollama up -d ollama
+#   docker compose -f docker/docker-compose.yaml exec ollama ollama pull llama3.2
+#   .env: EASYRAG_GENERATOR_PROVIDER=ollama
+#         EASYRAG_GENERATOR_BASE_URL=http://ollama:11434
+
 services:
   easyrag:
     build:
       context: ..
       dockerfile: docker/Dockerfile
+      args:
+        EXTRAS: ${EASYRAG_EXTRAS:-}
+    image: easyrag:latest
     env_file:
-      - ../.env
+      - path: ../.env
+        required: false
     volumes:
       - ../data:/app/data
-    command: ["ask", "/app/data", "What is RAG?"]
+      - ../configs:/app/configs:ro
+      - model-cache:/home/easyrag/.cache
+    stdin_open: true # for `chat`
+    tty: true
+
+  ollama:
+    image: ollama/ollama:latest
+    profiles: ["ollama"]
+    volumes:
+      - ollama:/root/.ollama
+    ports:
+      - "11434:11434"
+
+volumes:
+  model-cache:
+  ollama:

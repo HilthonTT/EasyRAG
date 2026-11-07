@@ -28,3 +28,12 @@ jobs:
           python-version: ${{ matrix.python-version }}
       - run: uv sync
       - run: uv run pytest --cov=easyrag
+
+  docker:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: docker build -f docker/Dockerfile -t easyrag .
+      - name: Smoke test
+        run: |
+          docker run --rm -v "$PWD/examples/data:/docs:ro" easyrag ask --docs /docs "What is RAG?"
