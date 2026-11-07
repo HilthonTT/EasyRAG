@@ -7,6 +7,7 @@ from easyrag.pipelines import (
     HyDEPipeline,
     IRCOTPipeline,
     IterativeRAGPipeline,
+    MultiQueryPipeline,
     NaiveRAGPipeline,
     SelfAskPipeline,
 )
@@ -20,6 +21,7 @@ __all__ = [
     "HyDEPipeline",
     "IRCOTPipeline",
     "IterativeRAGPipeline",
+    "MultiQueryPipeline",
     "NaiveRAGPipeline",
     "RAGResponse",
     "RetrievedChunk",

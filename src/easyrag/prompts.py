@@ -22,6 +22,13 @@ reference document. It is used only for search, so be specific and factual in st
 Question: {question}
 Passage:"""
 
+# Multi-query (LangChain MultiQueryRetriever; RAG-Fusion). The instructions live in the system
+# prompt so the user prompt is only the question: a generator that echoes its prompt then yields
+# just the original question back, which is de-duplicated away.
+MULTI_QUERY_SYSTEM_PROMPT = """You help a search engine find documents. Given a question, write
+{n} different search queries that ask for the same information, using different wording,
+synonyms or angles. Write one query per line, with no numbering and no other text."""
+
 ITERATIVE_QUERY_TEMPLATE = "{question}\n{previous_answer}"
 
 # Self-Ask (Press et al., 2023). The few-shot examples live in the system prompt so the user

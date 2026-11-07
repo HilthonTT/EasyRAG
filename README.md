@@ -44,7 +44,7 @@ uv run easyrag chat                     # interactive
 uv run easyrag eval data/eval.jsonl     # score retrieval and answers on a question set
 ```
 
-Pipelines (`pipeline.type`): `naive`, `hyde`, `iterative`, `self_ask` and `ircot`. For example,
+Pipelines (`pipeline.type`): `naive`, `hyde`, `multi_query`, `iterative`, `self_ask` and `ircot`. For example,
 `EASYRAG_PIPELINE_TYPE=self_ask uv run easyrag ask "..."`.
 
 See [docs/architecture.md](docs/architecture.md) for how the pieces fit together.

@@ -52,8 +52,9 @@ class GeneratorConfig:
 
 @dataclass
 class PipelineConfig:
-    type: str = "naive"  # naive | hyde | iterative | self_ask | ircot
+    type: str = "naive"  # naive | hyde | multi_query | iterative | self_ask | ircot
     max_iterations: int = 3  # iterative, self_ask and ircot
+    num_queries: int = 3  # multi_query: LLM rewrites searched alongside the question
     index_dir: str = ".rag_index"
 
 

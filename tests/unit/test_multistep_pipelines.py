@@ -1,10 +1,18 @@
 import pytest
 
-from easyrag import Config, Document, IRCOTPipeline, IterativeRAGPipeline, SelfAskPipeline
+from easyrag import (
+    Config,
+    Document,
+    IRCOTPipeline,
+    IterativeRAGPipeline,
+    MultiQueryPipeline,
+    SelfAskPipeline,
+)
 from easyrag.factory import build_pipeline
 from easyrag.generators import BaseGenerator
 from easyrag.pipelines import PIPELINES
 from easyrag.pipelines.base import merge_contexts
+from easyrag.rerankers import BaseReranker
 from easyrag.schema import Chunk, RetrievedChunk
 
 
@@ -129,3 +137,65 @@ def test_merge_contexts_dedupes_and_keeps_best_score() -> None:
         [RetrievedChunk(a, 0.2), RetrievedChunk(b, 0.5)], [RetrievedChunk(a, 0.9)]
     )
     assert [(r.chunk.id, r.score) for r in merged] == [(a.id, 0.9), (b.id, 0.5)]
+
+
+def test_multi_query_searches_with_every_rewrite(sample_documents: list[Document]) -> None:
+    generator = _ScriptedGenerator(
+        ["1. Which city is Germany's capital?\n- What is the capital of France?\n", "Berlin [1]"]
+    )
+    pipeline = MultiQueryPipeline.from_config(
+        Config.from_dict({"retriever": {"method": "bm25", "top_k": 2}}), generator=generator
+    )
+    pipeline.index(sample_documents)
+
+    response = pipeline.run("What is the capital of France?")
+
+    # The duplicate of the original question is dropped and list markers are stripped.
+    assert response.metadata["queries"] == [
+        "What is the capital of France?",
+        "Which city is Germany's capital?",
+    ]
+    contents = [c.chunk.content for c in response.contexts]
+    assert any("Paris" in c for c in contents)
+    assert any("Berlin" in c for c in contents)
+    assert response.answer == "Berlin [1]"
+
+
+def test_multi_query_reranks_fused_results_against_the_question(
+    sample_documents: list[Document],
+) -> None:
+    class RecordingReranker(BaseReranker):
+        def __init__(self) -> None:
+            self.queries: list[str] = []
+
+        def rerank(
+            self, query: str, results: list[RetrievedChunk], top_k: int
+        ) -> list[RetrievedChunk]:
+            self.queries.append(query)
+            return results[:top_k]
+
+    reranker = RecordingReranker()
+    generator = _ScriptedGenerator(["capital city of Germany", "answer"])
+    pipeline = MultiQueryPipeline.from_config(Config(), generator=generator, reranker=reranker)
+    pipeline.index(sample_documents)
+
+    pipeline.run("What is the capital of France?")
+
+    assert reranker.queries == ["What is the capital of France?"]
+
+
+def test_multi_query_parser_limits_and_dedupes() -> None:
+    raw = 'a\n\n"b"\nA\n3) c\nd'
+    assert MultiQueryPipeline._parse_queries(raw, "q", 2) == ["q", "a", "b"]
+    assert MultiQueryPipeline._parse_queries("", "q", 3) == ["q"]
+
+
+def test_multi_query_with_zero_rewrites_skips_the_llm(sample_documents: list[Document]) -> None:
+    generator = _ScriptedGenerator(["the answer"])
+    pipeline = MultiQueryPipeline.from_config(Config(), generator=generator, num_queries=0)
+    pipeline.index(sample_documents)
+
+    response = pipeline.run("What is the capital of France?")
+
+    assert response.metadata["queries"] == ["What is the capital of France?"]
+    assert len(generator.prompts) == 1  # only the answer

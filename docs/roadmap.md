@@ -35,7 +35,7 @@ References:
 - [x] Retrieval and generation are measured separately:
   - Retrieval: did the right chunk come back? (`hit_rate`, `mrr`; `--retrieval-only` skips the LLM)
   - Generation: was the answer correct? (`exact_match`, `contains_answer`, `f1`)
-- [ ] LLM judge for answer correctness and faithfulness to the retrieved passages
+- [x] LLM judge for answer correctness and faithfulness to the retrieved passages
 
 Most RAG failures are retrieval failures.
 
@@ -45,7 +45,8 @@ Most RAG failures are retrieval failures.
 - [x] **Hybrid search:** `BM25Retriever` merged with vector results by reciprocal rank fusion
 - [x] **Reranking:** retrieve `fetch_k`, rescore with `CrossEncoderReranker`, keep `top_k`
 - [x] **Query rewriting:** HyDE (`pipeline.type: hyde`)
-- [ ] More query rewriting: multi-query, step-back questions
+- [x] **Multi-query:** `pipeline.type: multi_query` searches with LLM rewrites, fused by RRF
+- [ ] Step-back questions
 
 ## 4. Practical features
 

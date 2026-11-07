@@ -1,15 +1,37 @@
 from collections import defaultdict
+from collections.abc import Sequence
 
 from easyrag.retrievers.base import BaseRetriever
 from easyrag.schema import Chunk, RetrievedChunk
 
 
-class HybridRetriever(BaseRetriever):
-    """Combine e.g. BM25 (exact terms) with vector search (meaning).
+def reciprocal_rank_fusion(
+    result_lists: Sequence[list[RetrievedChunk]],
+    weights: Sequence[float] | None = None,
+    rrf_k: int = 60,
+) -> list[RetrievedChunk]:
+    """Merge ranked lists: score(chunk) = sum_i weight_i / (rrf_k + rank_i(chunk)), best first.
 
-    RRF uses only ranks, so the incomparable raw scores of each retriever never need calibrating:
-    score(chunk) = sum_i weight_i / (rrf_k + rank_i(chunk)).
+    Only ranks are used, so the raw scores of different retrievers or queries never need
+    calibrating against each other.
     """
+    weights = weights if weights is not None else [1.0] * len(result_lists)
+    if len(weights) != len(result_lists):
+        raise ValueError("weights must be one entry per result list")
+    scores: defaultdict[str, float] = defaultdict(float)
+    chunks: dict[str, Chunk] = {}
+
+    for results, weight in zip(result_lists, weights, strict=True):
+        for rank, result in enumerate(results, start=1):
+            scores[result.chunk.id] += weight / (rrf_k + rank)
+            chunks[result.chunk.id] = result.chunk
+
+    ranked = sorted(scores.items(), key=lambda kv: kv[1], reverse=True)
+    return [RetrievedChunk(chunks[cid], score) for cid, score in ranked]
+
+
+class HybridRetriever(BaseRetriever):
+    """Combine e.g. BM25 (exact terms) with vector search (meaning) by reciprocal rank fusion."""
 
     def __init__(
         self,
@@ -36,14 +58,5 @@ class HybridRetriever(BaseRetriever):
     def retrieve(self, query: str, top_k: int | None = None) -> list[RetrievedChunk]:
         top_k = top_k or self.top_k
         fetch_k = max(self.fetch_k or 0, top_k * 2)
-        scores: defaultdict[str, float] = defaultdict(float)
-        chunks: dict[str, Chunk] = {}
-
-        for retriever, weight in zip(self.retrievers, self.weights, strict=True):
-            for rank, result in enumerate(retriever.retrieve(query, fetch_k), start=1):
-                scores[result.chunk.id] += weight / (self.rrf_k + rank)
-                chunks[result.chunk.id] = result.chunk
-
-        ranked = sorted(scores.items(), key=lambda kv: kv[1], reverse=True)[:top_k]
-
-        return [RetrievedChunk(chunks[cid], score) for cid, score in ranked]
+        result_lists = [retriever.retrieve(query, fetch_k) for retriever in self.retrievers]
+        return reciprocal_rank_fusion(result_lists, self.weights, self.rrf_k)[:top_k]

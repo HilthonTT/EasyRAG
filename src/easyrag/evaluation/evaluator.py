@@ -118,8 +118,7 @@ def evaluate(
             response = pipeline.run(example.question)
             contexts, answer = response.contexts, response.answer
         else:
-            query = pipeline.search_query(example.question)
-            contexts, answer = pipeline.retrieve(query, example.question), ""
+            contexts, answer = pipeline.retrieve_for(example.question), ""
 
         retrieved = [Path(c.chunk.source).as_posix() for c in contexts]
         scores: dict[str, float] = {}

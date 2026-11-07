@@ -102,6 +102,14 @@ class BasePipeline(ABC):
         candidates = self.retriever.retrieve(query, max(self.fetch_k, self.top_k))
         return self.reranker.rerank(question or query, candidates, self.top_k)
 
+    def retrieve_for(self, question: str) -> list[RetrievedChunk]:
+        """The contexts for `question`, retrieved the way this pipeline searches.
+
+        Defaults to one search with `search_query`; multi-query overrides it to search with
+        several rewrites. The evaluator's retrieval-only mode uses this too.
+        """
+        return self.retrieve(self.search_query(question), question)
+
     def save(self, path: str | Path) -> None:
         path = Path(path)
         path.mkdir(parents=True, exist_ok=True)

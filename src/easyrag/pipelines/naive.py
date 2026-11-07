@@ -15,6 +15,9 @@ class NaiveRAGPipeline(BasePipeline):
         return RAGResponse(question=question, answer="".join(answer), contexts=contexts)
 
     def stream(self, question: str) -> tuple[list[RetrievedChunk], Iterator[str]]:
-        contexts = self.retrieve(self.search_query(question), question)
+        contexts = self.retrieve_for(question)
+        return contexts, self.stream_answer(question, contexts)
+
+    def stream_answer(self, question: str, contexts: list[RetrievedChunk]) -> Iterator[str]:
         prompt = build_rag_prompt(question, contexts, self.prompt_template)
-        return contexts, self.generator.stream(prompt, system=self.system_prompt)
+        return self.generator.stream(prompt, system=self.system_prompt)

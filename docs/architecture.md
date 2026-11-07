@@ -21,7 +21,7 @@ Question ─────────────► Retriever ◄─────
 | `retrievers`   | `BaseRetriever`   | `VectorRetriever`, `BM25Retriever`, `HybridRetriever` (reciprocal rank fusion) |
 | `rerankers`    | `BaseReranker`    | `CrossEncoderReranker` |
 | `generators`   | `BaseGenerator`   | `EchoGenerator`, `AnthropicGenerator`, `OpenAIGenerator`, `OllamaGenerator` |
-| `pipelines`    | `BasePipeline`    | `NaiveRAGPipeline`, `HyDEPipeline`, `IterativeRAGPipeline`, `SelfAskPipeline`, `IRCOTPipeline` |
+| `pipelines`    | `BasePipeline`    | `NaiveRAGPipeline`, `HyDEPipeline`, `MultiQueryPipeline`, `IterativeRAGPipeline`, `SelfAskPipeline`, `IRCOTPipeline` |
 | `evaluation`   | —                 | `evaluate`; metrics `exact_match`, `contains_answer`, `token_f1`, `hit_rate`, `recall_at_k`, `reciprocal_rank` |
 
 `factory.py` builds every component from the config (`configs/default.yaml`), and
@@ -36,6 +36,7 @@ when the saved embedding model differs from the configured one.
 | --------------- | ---------------------- | ---------------------------------------- |
 | `naive`         | `NaiveRAGPipeline`     | Retrieve once, then generate (streams) |
 | `hyde`          | `HyDEPipeline`         | Search with an LLM-written hypothetical answer |
+| `multi_query`   | `MultiQueryPipeline`   | Search with the question and `num_queries` LLM rewrites, fused by rank |
 | `iterative`     | `IterativeRAGPipeline` | Re-retrieve with the question plus the previous answer, `max_iterations` rounds |
 | `self_ask`      | `SelfAskPipeline`      | The model asks follow-up questions, each answered from retrieval |
 | `ircot`         | `IRCOTPipeline`        | One reasoning sentence per step, each used as the next search query |
