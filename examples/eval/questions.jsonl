@@ -1,0 +1,56 @@
+{"question": "Who founded Tessaly Marine Instruments?", "answers": ["Ingrid Solheim", "Mateo Varga"], "sources": ["company/about.md"]}
+{"question": "In what year was the company founded?", "answers": ["2009"], "sources": ["company/about.md"]}
+{"question": "Who is the CEO of Tessaly?", "answers": ["Priya Raman"], "sources": ["company/about.md"]}
+{"question": "Roughly how many people work at Tessaly?", "answers": ["340"], "sources": ["company/about.md"]}
+{"question": "Which office runs the calibration lab?", "answers": ["Rotterdam"], "sources": ["company/offices.md"]}
+{"question": "What time does the Halifax office close on Fridays in summer?", "answers": ["15:00", "3 pm", "3pm", "3:00"], "sources": ["company/offices.md"]}
+{"question": "Which tool do I use to book flights and hotels for a work trip?", "answers": ["Voyager"], "sources": ["handbook/travel.md"]}
+{"question": "Can I fly business class on a ten-hour flight?", "answers": ["premium economy"], "sources": ["handbook/travel.md"]}
+{"question": "What is the maximum I can spend on a hotel per night in Oslo?", "answers": ["210"], "sources": ["handbook/travel.md"]}
+{"question": "What daily allowance do I get when travelling to the United States?", "answers": ["70 euros", "€70", "EUR 70", "70 EUR"], "sources": ["handbook/travel.md"]}
+{"question": "Above what cost does a trip need sign-off from the department head?", "answers": ["2,000", "2000"], "sources": ["handbook/travel.md"]}
+{"question": "How long do I have to submit an expense claim?", "answers": ["30 days"], "sources": ["handbook/expenses.md"]}
+{"question": "From what amount do I need to attach a receipt?", "answers": ["25 euros", "€25", "EUR 25", "25 EUR"], "sources": ["handbook/expenses.md"]}
+{"question": "How much do I get back per kilometre when I drive my own car for work?", "answers": ["0.32"], "sources": ["handbook/expenses.md"]}
+{"question": "What is the spending limit per person for a dinner with a customer?", "answers": ["80 euros", "€80", "EUR 80", "80 EUR"], "sources": ["handbook/expenses.md"]}
+{"question": "How quickly are approved expense claims paid out?", "answers": ["ten working days", "10 working days"], "sources": ["handbook/expenses.md"]}
+{"question": "How many vacation days does a full-time employee get?", "answers": ["27"], "sources": ["handbook/leave.md"]}
+{"question": "By when must leave carried over from last year be used?", "answers": ["31 March", "March 31"], "sources": ["handbook/leave.md"]}
+{"question": "When do I need a doctor's note for being ill?", "answers": ["fourth", "4th", "more than three days", "after three days", "after 3 days"], "sources": ["handbook/leave.md"]}
+{"question": "Are the days between Christmas and New Year taken from my holiday allowance?", "answers": ["not deducted", "are not taken", "aren't deducted", "does not reduce", "do not count"], "sources": ["handbook/leave.md"]}
+{"question": "How long is fully paid leave for the primary carer after a baby is born?", "answers": ["20 weeks", "twenty weeks"], "sources": ["handbook/parental-leave.md"]}
+{"question": "How long do I need to have worked here before the company tops up parental pay?", "answers": ["six months", "6 months"], "sources": ["handbook/parental-leave.md"]}
+{"question": "How many keeping-in-touch days can I work during parental leave?", "answers": ["ten", "10 days", "10 keeping"], "sources": ["handbook/parental-leave.md"]}
+{"question": "Which weekday is the whole team expected in the office?", "answers": ["Tuesday"], "sources": ["handbook/remote-work.md"]}
+{"question": "Can I work remotely from Thailand for a month?", "answers": ["EEA", "European Economic Area"], "sources": ["handbook/remote-work.md"]}
+{"question": "How much money do new employees get to furnish a home office?", "answers": ["400"], "sources": ["handbook/remote-work.md"]}
+{"question": "Which company provides our health insurance?", "answers": ["Nordvita"], "sources": ["handbook/benefits.md"]}
+{"question": "How much does the company contribute towards a gym membership?", "answers": ["35"], "sources": ["handbook/benefits.md"]}
+{"question": "What is my yearly budget for courses and conferences?", "answers": ["1,500", "1500"], "sources": ["handbook/learning.md"]}
+{"question": "Up to what price can I buy a book without my manager's approval?", "answers": ["60 euros", "€60", "EUR 60", "60 EUR"], "sources": ["handbook/learning.md"]}
+{"question": "What time should I arrive on my first day?", "answers": ["9:30", "09:30"], "sources": ["handbook/onboarding.md"]}
+{"question": "How long is the probation period?", "answers": ["six months", "6 months"], "sources": ["handbook/onboarding.md"]}
+{"question": "Within how many days must new hires finish the security awareness training?", "answers": ["14 days", "fourteen days"], "sources": ["handbook/onboarding.md"]}
+{"question": "How accurate is the TideWatch T3?", "answers": ["2 millimetres", "2 millimeters", "2 mm", "2mm"], "sources": ["products/tidewatch.md"]}
+{"question": "How does the TideWatch T4 send its data?", "answers": ["LTE-M", "LTEM"], "sources": ["products/tidewatch.md"]}
+{"question": "Until when will the T3 receive firmware updates?", "answers": ["2027"], "sources": ["products/tidewatch.md"]}
+{"question": "What is the maximum depth of the Skua probe?", "answers": ["2,000 m", "2000 m", "2,000 metres", "2,000 meters"], "sources": ["products/skua.md"]}
+{"question": "How often does the CTD probe need to be recalibrated?", "answers": ["12 months", "twelve months", "once a year", "every year", "annually"], "sources": ["products/skua.md"]}
+{"question": "How often does the Nimbus buoy transmit data in normal conditions?", "answers": ["30 minutes", "half an hour", "half hour"], "sources": ["products/nimbus.md"]}
+{"question": "How many instruments can be mounted on the buoy?", "answers": ["six", "6 sensors", "6 instruments"], "sources": ["products/nimbus.md"]}
+{"question": "How long is the warranty on a tide gauge?", "answers": ["36 months", "three years", "3 years"], "sources": ["products/warranty.md"]}
+{"question": "Where should a customer in Brazil send a faulty instrument?", "answers": ["Halifax"], "sources": ["products/warranty.md"]}
+{"question": "In what year did the office that handles returns from the Americas open?", "answers": ["2018"], "sources": ["products/warranty.md", "company/offices.md"]}
+{"question": "In which city is the CTD probe that rides on the Nimbus buoy calibrated?", "answers": ["Rotterdam"], "sources": ["products/nimbus.md", "products/skua.md"]}
+{"question": "What is the standard warranty on the tide gauge model launched in 2016?", "answers": ["36 months", "three years", "3 years"], "sources": ["products/tidewatch.md", "products/warranty.md"]}
+{"question": "How quickly must I acknowledge a page when I'm on call?", "answers": ["15 minutes", "fifteen minutes"], "sources": ["engineering/on-call.md"]}
+{"question": "How much extra do I earn for a week of on-call duty?", "answers": ["250"], "sources": ["engineering/on-call.md"]}
+{"question": "How often do we post status updates when the whole fleet stops reporting?", "answers": ["30 minutes", "half an hour", "half hour"], "sources": ["engineering/incidents.md"]}
+{"question": "What is the deadline for writing a postmortem?", "answers": ["five working days", "5 working days"], "sources": ["engineering/incidents.md"]}
+{"question": "Over how many days is a new firmware version rolled out to the fleet?", "answers": ["ten days", "10 days"], "sources": ["engineering/releases.md"]}
+{"question": "When is there a release freeze?", "answers": ["December"], "sources": ["engineering/releases.md"]}
+{"question": "How many approvals does a firmware pull request need?", "answers": ["two approvals", "2 approvals"], "sources": ["engineering/code-review.md"]}
+{"question": "What is the minimum length of a password?", "answers": ["14 characters", "fourteen characters"], "sources": ["engineering/security.md"]}
+{"question": "How soon must I report a stolen laptop?", "answers": ["one hour", "1 hour", "an hour"], "sources": ["engineering/security.md"]}
+{"question": "How often are laptops replaced?", "answers": ["four years", "4 years"], "sources": ["engineering/it-equipment.md"]}
+{"question": "How much is the monthly allowance for using my own phone for work?", "answers": ["25 euros", "€25", "EUR 25", "25 EUR"], "sources": ["engineering/it-equipment.md"]}

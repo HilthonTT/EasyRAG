@@ -44,6 +44,10 @@ uv run easyrag chat                     # interactive
 uv run easyrag eval data/eval.jsonl     # score retrieval and answers on a question set
 ```
 
+To try evaluation without your own data, use the example benchmark in
+[examples/eval/](examples/eval/README.md):
+`uv run easyrag eval examples/eval/questions.jsonl --docs examples/eval/docs --retrieval-only`.
+
 Pipelines (`pipeline.type`): `naive`, `hyde`, `multi_query`, `iterative`, `self_ask` and `ircot`. For example,
 `EASYRAG_PIPELINE_TYPE=self_ask uv run easyrag ask "..."`.
 

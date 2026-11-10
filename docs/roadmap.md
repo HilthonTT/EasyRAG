@@ -29,9 +29,11 @@ References:
 
 ## 2. Evaluation set
 
+- [x] Example set: 56 questions over a fictional 20-document corpus in `examples/eval/`
+- [x] Retrieval baseline recorded in [`examples/eval/README.md`](../examples/eval/README.md)
+- [ ] Answer baseline with a real generator (`contains_answer`, `f1`, `--judge`)
 - [ ] Write 20–50 questions about your own documents, with the correct answer and source file,
-      as JSONL in `data/`
-- [ ] Run `uv run easyrag eval data/<file>.jsonl` (or `scripts/evaluate.py`) and record the baseline
+      as JSONL in `data/` (`scripts/make_eval_set.py` drafts them)
 - [x] Retrieval and generation are measured separately:
   - Retrieval: did the right chunk come back? (`hit_rate`, `mrr`; `--retrieval-only` skips the LLM)
   - Generation: was the answer correct? (`exact_match`, `contains_answer`, `f1`)
