@@ -29,6 +29,64 @@ MULTI_QUERY_SYSTEM_PROMPT = """You help a search engine find documents. Given a 
 {n} different search queries that ask for the same information, using different wording,
 synonyms or angles. Write one query per line, with no numbering and no other text."""
 
+# Step-back prompting (Zheng et al., 2023). As with multi-query, the user prompt is only the
+# question, so a generator that echoes its prompt adds no second query.
+STEP_BACK_SYSTEM_PROMPT = """You help a search engine find background knowledge. Given a
+question, write one more generic "step-back" question about the concept, rule or entity behind
+it, which is easier to answer and whose answer helps answer the original. Write only the
+step-back question.
+
+Question: Which position did Knox Cunningham hold from May 1955 to Apr 1956?
+Step-back question: Which positions has Knox Cunningham held in his career?
+
+Question: How many vacation days does a part-time employee working three days a week get?
+Step-back question: How is vacation time calculated for part-time employees?"""
+
+# Self-RAG, prompted (after Asai et al., 2024, which trains the model to emit these judgements as
+# reflection tokens). Each check puts its instructions in the system prompt; an unparseable reply
+# falls back to the plain RAG behaviour.
+SELF_RAG_RETRIEVE_SYSTEM_PROMPT = """Decide whether answering the user's message needs facts
+from a document collection (policies, products, people, numbers, events), or can be answered
+without any (greetings, arithmetic, general reasoning, rewording). Reply with only
+"Retrieve: yes" or "Retrieve: no"."""
+
+SELF_RAG_RELEVANCE_SYSTEM_PROMPT = """You are given a question and numbered passages. List the
+passages that contain information useful for answering the question. Reply with one line only:
+"Relevant: 1, 3" (the numbers), or "Relevant: none"."""
+
+SELF_RAG_RELEVANCE_PROMPT = """Passages:
+{context}
+
+Question: {question}"""
+
+SELF_RAG_SUPPORT_SYSTEM_PROMPT = """You check an answer against the numbered passages it was
+written from. Reply with one line only: "Supported: yes" if every factual claim in the answer is
+backed by the passages, or "Supported: no" if any claim is missing from or contradicts them."""
+
+SELF_RAG_SUPPORT_PROMPT = """Passages:
+{context}
+
+Answer: {answer}"""
+
+QUERY_REWRITE_SYSTEM_PROMPT = """The search for the user's question found nothing useful.
+Rewrite it as one better search query: name the specific things to look up and use the words a
+reference document would use. Write only the query."""
+
+DIRECT_ANSWER_SYSTEM_PROMPT = """Answer the user's message directly and concisely."""
+
+# Agent-style RAG: a ReAct loop (Yao et al., 2023) with a search tool. The instructions live in
+# the system prompt so the user prompt is only the trajectory.
+AGENT_SYSTEM_PROMPT = """You answer questions by searching a document collection. Work in steps.
+In each step write one "Thought:" line, then exactly one action line, then stop:
+- "Action: search[<query>]" to search; the passages found are shown to you as an Observation,
+  numbered so you can cite them.
+- "Action: finish[<answer>]" once you can answer. Cite the passages you used with their numbers
+  in square brackets, e.g. [1] or [2][3]. If the passages do not contain the answer, say so.
+Search for one fact at a time and rephrase the query if a search finds nothing useful. Never
+write an "Observation:" yourself; it comes from the search engine."""
+
+AGENT_SCRATCHPAD = "Question: {question}"
+
 ITERATIVE_QUERY_TEMPLATE = "{question}\n{previous_answer}"
 
 # Self-Ask (Press et al., 2023). The few-shot examples live in the system prompt so the user

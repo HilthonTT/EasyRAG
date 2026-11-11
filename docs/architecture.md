@@ -21,7 +21,7 @@ Question ─────────────► Retriever ◄─────
 | `retrievers`   | `BaseRetriever`   | `VectorRetriever`, `BM25Retriever`, `HybridRetriever` (reciprocal rank fusion) |
 | `rerankers`    | `BaseReranker`    | `CrossEncoderReranker` |
 | `generators`   | `BaseGenerator`   | `EchoGenerator`, `AnthropicGenerator`, `OpenAIGenerator`, `OllamaGenerator` |
-| `pipelines`    | `BasePipeline`    | `NaiveRAGPipeline`, `HyDEPipeline`, `MultiQueryPipeline`, `IterativeRAGPipeline`, `SelfAskPipeline`, `IRCOTPipeline` |
+| `pipelines`    | `BasePipeline`    | `NaiveRAGPipeline`, `HyDEPipeline`, `MultiQueryPipeline`, `StepBackPipeline`, `IterativeRAGPipeline`, `SelfAskPipeline`, `IRCOTPipeline`, `SelfRAGPipeline`, `AgentPipeline` |
 | `evaluation`   | —                 | `evaluate`; metrics `exact_match`, `contains_answer`, `token_f1`, `hit_rate`, `recall_at_k`, `reciprocal_rank`, `citation_validity`; `LLMJudge` |
 
 `factory.py` builds every component from the config (`configs/default.yaml`), and
@@ -44,9 +44,17 @@ whole file, because chunk ids derive from the document id, which derives from it
 | `naive`         | `NaiveRAGPipeline`     | Retrieve once, then generate (streams) |
 | `hyde`          | `HyDEPipeline`         | Search with an LLM-written hypothetical answer |
 | `multi_query`   | `MultiQueryPipeline`   | Search with the question and `num_queries` LLM rewrites, fused by rank |
+| `step_back`     | `StepBackPipeline`     | Also search an LLM-written, more generic "step-back" question, fused by rank |
 | `iterative`     | `IterativeRAGPipeline` | Re-retrieve with the question plus the previous answer, `max_iterations` rounds |
 | `self_ask`      | `SelfAskPipeline`      | The model asks follow-up questions, each answered from retrieval |
 | `ircot`         | `IRCOTPipeline`        | One reasoning sentence per step, each used as the next search query |
+| `self_rag`      | `SelfRAGPipeline`      | Decide whether to retrieve, drop irrelevant passages, check support, retry with a rewritten query |
+| `agent`         | `AgentPipeline`        | ReAct loop: the model chooses `search[query]` or `finish[answer]` each step |
+
+The multi-step pipelines (`iterative` and below) retrieve based on generated text, so
+`easyrag eval --retrieval-only` refuses them. `self_rag` and `agent` use plain-text protocols
+(`Retrieve: yes`, `Action: search[...]`), so they work with every generator; a reply they cannot
+parse falls back to plain retrieve-then-generate.
 
 ## Citations
 

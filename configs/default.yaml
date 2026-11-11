@@ -33,8 +33,8 @@ generator:
   base_url: "" # ollama / OpenAI-compatible servers
 
 pipeline:
-  type: naive # naive | hyde | multi_query | iterative | self_ask | ircot
-  max_iterations: 3 # iterative, self_ask and ircot
+  type: naive # naive | hyde | multi_query | step_back | iterative | self_ask | ircot | self_rag | agent
+  max_iterations: 3 # rounds or searches: iterative, self_ask, ircot, self_rag, agent
   num_queries: 3 # multi_query: LLM rewrites searched alongside the question
   index_dir: .rag_index
 

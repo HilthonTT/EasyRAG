@@ -48,7 +48,7 @@ Most RAG failures are retrieval failures.
 - [x] **Reranking:** retrieve `fetch_k`, rescore with `CrossEncoderReranker`, keep `top_k`
 - [x] **Query rewriting:** HyDE (`pipeline.type: hyde`)
 - [x] **Multi-query:** `pipeline.type: multi_query` searches with LLM rewrites, fused by RRF
-- [ ] Step-back questions
+- [x] **Step-back questions:** `pipeline.type: step_back` also searches a more generic question
 
 ## 4. Practical features
 
@@ -66,8 +66,9 @@ Most RAG failures are retrieval failures.
 
 - [x] Multi-step / iterative retrieval (`iterative`, ITER-RETGEN)
 - [x] Question decomposition (`self_ask`) and interleaved chain-of-thought retrieval (`ircot`)
-- [ ] Self-RAG (the model decides when to retrieve)
-- [ ] Agent-style RAG
+- [x] Self-RAG (`self_rag`): the model decides when to retrieve, filters irrelevant passages,
+      checks the answer is supported and retries with a rewritten query
+- [x] Agent-style RAG (`agent`): a ReAct loop where the model picks its own searches and when to stop
 
 Each is a new class in `src/easyrag/pipelines/`, registered in `PIPELINES`. FlashRAG's
 [`pipeline/`](https://github.com/RUC-NLPIR/FlashRAG/tree/main/flashrag/pipeline) folder is a good reference.
