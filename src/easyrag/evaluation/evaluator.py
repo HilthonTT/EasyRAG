@@ -5,6 +5,7 @@ from dataclasses import dataclass, field
 from pathlib import Path, PurePosixPath
 from typing import Any
 
+from easyrag.evaluation.citations import citation_validity
 from easyrag.evaluation.judge import LLMJudge
 from easyrag.evaluation.metrics import (
     contains_answer,
@@ -131,6 +132,8 @@ def evaluate(
             scores["exact_match"] = exact_match(answer, example.answers)
             scores["contains_answer"] = contains_answer(answer, example.answers)
             scores["f1"] = token_f1(answer, example.answers)
+        if generate and (validity := citation_validity(answer, len(contexts))) is not None:
+            scores["citation_valid"] = validity
         if generate and judge is not None:
             if example.answers:
                 scores["judge_correct"], reasons["judge_correct"] = judge.correctness(
@@ -141,5 +144,7 @@ def evaluate(
             scores["faithfulness"], reasons["faithfulness"] = judge.faithfulness(
                 answer, format_context(contexts)
             )
+            if (support := judge.citation_support(answer, contexts)) is not None:
+                scores["citation_support"], reasons["citation_support"] = support
         results.append(EvalResult(example, answer, retrieved, scores, reasons))
     return EvalReport(results)

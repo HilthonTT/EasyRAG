@@ -9,6 +9,7 @@ import sys
 from pathlib import Path
 
 from easyrag.config import Config
+from easyrag.evaluation.citations import invalid_citations
 from easyrag.factory import build_judge, build_pipeline
 from easyrag.loaders.directory import DirectoryLoader
 from easyrag.pipelines.base import BasePipeline
@@ -167,9 +168,15 @@ def _answer(pipeline: BasePipeline, question: str, show_context: bool) -> None:
     contexts, answer = pipeline.stream(question)
     if show_context:
         _print_contexts(contexts)
+    pieces = []
     for piece in answer:
         print(piece, end="", flush=True)
+        pieces.append(piece)
     print()
+    bad = invalid_citations("".join(pieces), len(contexts))
+    if bad:
+        cited = ", ".join(f"[{n}]" for n in bad)
+        print(f"\nWarning: the answer cites {cited}, but only {len(contexts)} passages were given.")
     if contexts:  # numbered like the [n] citations in the prompt and answer
         print("\nSources: " + ", ".join(f"[{i}] {_cite(c)}" for i, c in enumerate(contexts, 1)))
 

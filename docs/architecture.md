@@ -22,7 +22,7 @@ Question ─────────────► Retriever ◄─────
 | `rerankers`    | `BaseReranker`    | `CrossEncoderReranker` |
 | `generators`   | `BaseGenerator`   | `EchoGenerator`, `AnthropicGenerator`, `OpenAIGenerator`, `OllamaGenerator` |
 | `pipelines`    | `BasePipeline`    | `NaiveRAGPipeline`, `HyDEPipeline`, `MultiQueryPipeline`, `IterativeRAGPipeline`, `SelfAskPipeline`, `IRCOTPipeline` |
-| `evaluation`   | —                 | `evaluate`; metrics `exact_match`, `contains_answer`, `token_f1`, `hit_rate`, `recall_at_k`, `reciprocal_rank` |
+| `evaluation`   | —                 | `evaluate`; metrics `exact_match`, `contains_answer`, `token_f1`, `hit_rate`, `recall_at_k`, `reciprocal_rank`, `citation_validity`; `LLMJudge` |
 
 `factory.py` builds every component from the config (`configs/default.yaml`), and
 `build_pipeline` picks the pipeline class by `pipeline.type`. If a reranker is configured,
@@ -47,6 +47,13 @@ whole file, because chunk ids derive from the document id, which derives from it
 | `iterative`     | `IterativeRAGPipeline` | Re-retrieve with the question plus the previous answer, `max_iterations` rounds |
 | `self_ask`      | `SelfAskPipeline`      | The model asks follow-up questions, each answered from retrieval |
 | `ircot`         | `IRCOTPipeline`        | One reasoning sentence per step, each used as the next search query |
+
+## Citations
+
+The system prompt asks the model to cite passages as `[1]`, `[2][3]`. `easyrag ask` warns when a
+cited number points at no passage. In `easyrag eval`, `citation_valid` is the share of cited
+numbers that exist, and with `--judge`, `citation_support` is the share of cited sentences whose
+cited passages support them (ALCE citation recall, one judge call per cited sentence).
 
 ## Adding a component
 

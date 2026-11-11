@@ -1,3 +1,8 @@
+from easyrag.evaluation.citations import (
+    citation_validity,
+    extract_claims,
+    invalid_citations,
+)
 from easyrag.evaluation.evaluator import EvalExample, EvalReport, evaluate, load_examples
 from easyrag.evaluation.judge import LLMJudge
 from easyrag.evaluation.metrics import (
@@ -11,6 +16,9 @@ from easyrag.evaluation.metrics import (
 )
 
 __all__ = [
+    "citation_validity",
+    "extract_claims",
+    "invalid_citations",
     "exact_match",
     "hit_rate",
     "token_f1",

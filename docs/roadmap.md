@@ -59,7 +59,8 @@ Most RAG failures are retrieval failures.
       drops deleted ones; `easyrag remove` drops files (`BasePipeline.update` / `remove`)
 - [x] **More loaders:** PDF (`--extra pdf`), HTML
 - [x] **Citations:** the model cites `[1]`, `[2]` passages and the CLI lists the sources
-- [ ] Check that cited numbers point at passages that support the claim
+- [x] Check citations: `citation_valid` (numbers point at real passages; `ask` warns otherwise)
+      and, with `--judge`, `citation_support` (the cited passages support the sentence)
 
 ## 5. Advanced pipelines
 
