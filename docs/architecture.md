@@ -31,6 +31,12 @@ Question ─────────────► Retriever ◄─────
 when the saved embedding model differs from the configured one. Vector files load into either
 store, so switching `vectorstore.provider` does not re-embed.
 
+`BasePipeline.update(documents)` refreshes an index in place: chunks of a source file that are
+not in its new version are removed from every retriever, new chunks are added, and an unchanged
+file is not re-embedded. `remove(sources)` and `remove_missing(root)` drop files. The CLI exposes
+these as `easyrag index --update` and `easyrag remove`. Changing any part of a file re-embeds the
+whole file, because chunk ids derive from the document id, which derives from its content.
+
 ## Pipelines
 
 | `pipeline.type` | Class                  | How it combines retrieval and generation |

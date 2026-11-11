@@ -39,6 +39,8 @@ From the command line:
 
 ```bash
 uv run easyrag index examples/data      # build and save the index
+uv run easyrag index --update examples/data  # later: re-index changed files, drop deleted ones
+uv run easyrag remove examples/data/sample.txt  # drop one file from the index
 uv run easyrag ask "What is RAG?"       # or: easyrag ask --docs examples/data "What is RAG?"
 uv run easyrag chat                     # interactive
 uv run easyrag eval data/eval.jsonl     # score retrieval and answers on a question set

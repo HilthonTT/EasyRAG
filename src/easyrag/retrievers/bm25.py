@@ -3,6 +3,7 @@ from __future__ import annotations
 import heapq
 import math
 from collections import Counter, defaultdict
+from collections.abc import Collection
 
 from easyrag.retrievers.base import BaseRetriever
 from easyrag.schema import Chunk, RetrievedChunk
@@ -30,6 +31,16 @@ class BM25Retriever(BaseRetriever):
             self._doc_lengths.append(sum(freqs.values()))
             for term in freqs:
                 self._postings[term].append(index)
+
+    def remove_chunks(self, chunk_ids: Collection[str]) -> None:
+        ids = set(chunk_ids)
+        kept = [c for c in self.chunks if c.id not in ids]
+        if len(kept) == len(self.chunks):
+            return
+        # Postings hold positions, so rebuild; tokenizing is cheap next to embedding.
+        self.chunks, self._term_freqs, self._doc_lengths = [], [], []
+        self._postings = defaultdict(list)
+        self.add_chunks(kept)
 
     def retrieve(self, query: str, top_k: int | None = None) -> list[RetrievedChunk]:
         n = len(self.chunks)

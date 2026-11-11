@@ -1,8 +1,9 @@
 from __future__ import annotations
 
 import json
+import os
 from abc import ABC, abstractmethod
-from collections.abc import Iterator
+from collections.abc import Iterable, Iterator
 from pathlib import Path
 from typing import Any, ClassVar, TypeVar
 
@@ -90,15 +91,62 @@ class BasePipeline(ABC):
         Chunk ids come from content, so chunks already indexed (re-indexing the same documents)
         are skipped instead of being stored, and retrieved, twice.
         """
+        return self._add_chunks(self.splitter.split_documents(documents))
+
+    def update(self, documents: list[Document]) -> tuple[int, int]:
+        """Index `documents`, replacing what is already indexed from the same source files.
+
+        Use this to refresh a saved index after files change: chunks of a source that are not in
+        its new version are removed, new ones are added, and a file whose content did not change
+        is neither removed nor re-embedded. Returns `(chunks added, chunks removed)`.
+        """
+        new_chunks = self.splitter.split_documents(documents)
+        new_ids = {c.id for c in new_chunks}
+        sources = {_source_key(str(d.metadata.get("source", ""))) for d in documents} - {""}
+        stale = {
+            c.id for c in self.chunks if _source_key(c.source) in sources and c.id not in new_ids
+        }
+        removed = self._remove_ids(stale)
+        return self._add_chunks(new_chunks), removed
+
+    def remove(self, sources: Iterable[str]) -> int:
+        """Remove every chunk from these source files. Returns the number of chunks removed."""
+        keys = {_source_key(s) for s in sources} - {""}
+        return self._remove_ids({c.id for c in self.chunks if _source_key(c.source) in keys})
+
+    def remove_missing(self, root: str | Path | None = None) -> int:
+        """Remove chunks whose source file no longer exists (only under `root`, if given).
+
+        Chunks without a source, e.g. documents indexed from strings, are kept.
+        """
+        missing = {
+            c.source
+            for c in self.chunks
+            if c.source
+            and (root is None or _is_under(c.source, root))
+            and not Path(c.source).exists()
+        }
+        return self.remove(missing)
+
+    def _add_chunks(self, candidates: list[Chunk]) -> int:
+        """Index the chunks not indexed yet. Chunk ids come from content, so this de-duplicates."""
         seen = {c.id for c in self.chunks}
         chunks = []
-        for chunk in self.splitter.split_documents(documents):
+        for chunk in candidates:
             if chunk.id not in seen:
                 seen.add(chunk.id)
                 chunks.append(chunk)
         self.retriever.add_chunks(chunks)
         self.chunks.extend(chunks)
         return len(chunks)
+
+    def _remove_ids(self, ids: set[str]) -> int:
+        if not ids:
+            return 0
+        self.retriever.remove_chunks(ids)
+        before = len(self.chunks)
+        self.chunks = [c for c in self.chunks if c.id not in ids]
+        return before - len(self.chunks)
 
     def retrieve(self, query: str, question: str | None = None) -> list[RetrievedChunk]:
         """Search with `query`; rerank against `question` (default `query`).
@@ -185,6 +233,17 @@ def merge_contexts(
         if r.chunk.id not in best or r.score > best[r.chunk.id].score:
             best[r.chunk.id] = r
     return sorted(best.values(), key=lambda r: -r.score)
+
+
+def _source_key(source: str) -> str:
+    """Compare sources as absolute, case-normalized paths, so "docs/a.md" matches "./docs/a.md"
+    (and the backslash spelling on Windows)."""
+    return os.path.normcase(os.path.abspath(source)) if source else ""
+
+
+def _is_under(source: str, root: str | Path) -> bool:
+    key, prefix = _source_key(source), _source_key(str(root))
+    return key == prefix or key.startswith(prefix.rstrip(os.sep) + os.sep)
 
 
 def _vectors_file(index_dir: Path, i: int) -> Path | None:

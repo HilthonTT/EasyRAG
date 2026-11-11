@@ -55,7 +55,8 @@ Most RAG failures are retrieval failures.
 - [x] **Persistence:** `easyrag index` saves chunks and vectors; `ask` / `chat` load them
 - [x] **Vector database:** `FaissVectorStore` (`vectorstore.provider: faiss`, `--extra faiss`),
       exact `flat` or approximate `hnsw` index for indexes beyond ~100k chunks
-- [ ] **Incremental indexing:** add, update or remove documents in a saved index
+- [x] **Incremental indexing:** `easyrag index --update` re-indexes changed files, adds new ones and
+      drops deleted ones; `easyrag remove` drops files (`BasePipeline.update` / `remove`)
 - [x] **More loaders:** PDF (`--extra pdf`), HTML
 - [x] **Citations:** the model cites `[1]`, `[2]` passages and the CLI lists the sources
 - [ ] Check that cited numbers point at passages that support the claim

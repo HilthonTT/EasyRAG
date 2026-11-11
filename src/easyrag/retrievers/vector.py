@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from collections.abc import Collection
+
 from easyrag.embeddings.base import BaseEmbeddings
 from easyrag.retrievers.base import BaseRetriever
 from easyrag.schema import Chunk, RetrievedChunk
@@ -24,6 +26,9 @@ class VectorRetriever(BaseRetriever):
         if chunks:
             vectors = self.embeddings.embed_documents([c.content for c in chunks])
             self.vectorstore.add(chunks, vectors)
+
+    def remove_chunks(self, chunk_ids: Collection[str]) -> None:
+        self.vectorstore.delete(chunk_ids)
 
     def retrieve(self, query: str, top_k: int | None = None) -> list[RetrievedChunk]:
         return self.vectorstore.search(self.embeddings.embed_query(query), top_k or self.top_k)

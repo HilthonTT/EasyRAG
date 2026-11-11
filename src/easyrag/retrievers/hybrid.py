@@ -1,5 +1,5 @@
 from collections import defaultdict
-from collections.abc import Sequence
+from collections.abc import Collection, Sequence
 
 from easyrag.retrievers.base import BaseRetriever
 from easyrag.schema import Chunk, RetrievedChunk
@@ -58,6 +58,10 @@ class HybridRetriever(BaseRetriever):
     def add_chunks(self, chunks: list[Chunk]) -> None:
         for retriever in self.retrievers:
             retriever.add_chunks(chunks)
+
+    def remove_chunks(self, chunk_ids: Collection[str]) -> None:
+        for retriever in self.retrievers:
+            retriever.remove_chunks(chunk_ids)
 
     def retrieve(self, query: str, top_k: int | None = None) -> list[RetrievedChunk]:
         top_k = top_k or self.top_k

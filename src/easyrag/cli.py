@@ -12,7 +12,7 @@ from easyrag.config import Config
 from easyrag.factory import build_judge, build_pipeline
 from easyrag.loaders.directory import DirectoryLoader
 from easyrag.pipelines.base import BasePipeline
-from easyrag.schema import RetrievedChunk
+from easyrag.schema import Document, RetrievedChunk
 
 
 def main(argv: list[str] | None = None) -> None:
@@ -31,6 +31,15 @@ def main(argv: list[str] | None = None) -> None:
     index = sub.add_parser("index", help="Index a folder (or file) of documents and save it")
     index.add_argument("docs", help="Directory or file: .txt .md .rst .pdf .html")
     index.add_argument("--glob", default="**/*", help="File pattern inside the directory")
+    index.add_argument(
+        "--update",
+        action="store_true",
+        help="Update the saved index instead of replacing it: re-index changed files, add new "
+        "ones and drop files deleted from DOCS",
+    )
+
+    remove = sub.add_parser("remove", help="Remove source files from the saved index")
+    remove.add_argument("sources", nargs="+", help="Source file paths, as they were indexed")
 
     ask = sub.add_parser("ask", help="Ask one question")
     ask.add_argument("question")
@@ -60,9 +69,20 @@ def main(argv: list[str] | None = None) -> None:
     index_dir = Path(args.index_dir or config.pipeline.index_dir)
 
     if args.command == "index":
-        n_docs, n_chunks = _index(pipeline, args.docs, args.glob)
+        if args.update:
+            _update(pipeline, args.docs, args.glob, index_dir)
+        else:
+            n_docs, n_chunks = _index(pipeline, args.docs, args.glob)
+            print(f"Indexed {n_docs} documents into {n_chunks} chunks -> {index_dir}")
         pipeline.save(index_dir)
-        print(f"Indexed {n_docs} documents into {n_chunks} chunks -> {index_dir}")
+        return
+    if args.command == "remove":
+        _prepare(pipeline, None, index_dir)
+        removed = pipeline.remove(args.sources)
+        if not removed:
+            raise SystemExit(f"No indexed chunks come from: {', '.join(args.sources)}")
+        pipeline.save(index_dir)
+        print(f"Removed {removed} chunks; {len(pipeline.chunks)} left -> {index_dir}")
         return
 
     _prepare(pipeline, getattr(args, "docs", None), index_dir)
@@ -104,14 +124,32 @@ def _add_query_options(p: argparse.ArgumentParser) -> None:
     p.add_argument("--show-context", action="store_true", help="Print the retrieved passages")
 
 
-def _index(pipeline: BasePipeline, docs: str, glob: str = "**/*") -> tuple[int, int]:
+def _load(docs: str, glob: str = "**/*") -> list[Document]:
     try:
         documents = DirectoryLoader(docs, glob=glob).load()
     except (FileNotFoundError, ImportError) as e:  # bad path, or a .pdf without the pdf extra
         raise SystemExit(str(e)) from None
     if not documents:
         raise SystemExit(f"No supported documents found in {docs}")
+    return documents
+
+
+def _index(pipeline: BasePipeline, docs: str, glob: str = "**/*") -> tuple[int, int]:
+    documents = _load(docs, glob)
     return len(documents), pipeline.index(documents)
+
+
+def _update(pipeline: BasePipeline, docs: str, glob: str, index_dir: Path) -> None:
+    """Refresh the saved index (if any) with the current contents of `docs`."""
+    if (index_dir / "manifest.json").exists():
+        pipeline.load(index_dir)
+    documents = _load(docs, glob)
+    added, removed = pipeline.update(documents)
+    removed += pipeline.remove_missing(docs)
+    print(
+        f"Updated from {len(documents)} documents: {added} chunks added, {removed} removed, "
+        f"{len(pipeline.chunks)} total -> {index_dir}"
+    )
 
 
 def _prepare(pipeline: BasePipeline, docs: str | None, index_dir: Path) -> None:
