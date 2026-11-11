@@ -11,6 +11,10 @@ embedding:
   model: "" # empty = the provider's default model
   batch_size: 32
 
+vectorstore:
+  provider: memory # memory | faiss (uv sync --extra faiss)
+  index: flat # faiss only: flat (exact) | hnsw (approximate, fast on millions of chunks)
+
 retriever:
   method: hybrid # vector | bm25 | hybrid
   top_k: 4

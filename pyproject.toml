@@ -16,7 +16,8 @@ openai = ["openai>=3.45.0"]
 anthropic = ["anthropic>=2.4.0"]
 huggingface = ["sentence-transformers>=3.0"]
 pdf = ["pypdf>=6.21.4"]
-all = ["easyrag[openai,anthropic,huggingface,pdf]"]
+faiss = ["faiss-cpu>=1.9"]
+all = ["easyrag[openai,anthropic,huggingface,pdf,faiss]"]
 
 [project.scripts]
 easyrag = "easyrag.cli:main"

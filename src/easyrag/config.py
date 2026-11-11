@@ -28,6 +28,12 @@ class EmbeddingConfig:
 
 
 @dataclass
+class VectorStoreConfig:
+    provider: str = "memory"  # memory | faiss
+    index: str = "flat"  # faiss only: flat (exact) | hnsw (approximate, for large indexes)
+
+
+@dataclass
 class RetrieverConfig:
     method: str = "hybrid"  # vector | bm25 | hybrid
     top_k: int = 4
@@ -62,6 +68,7 @@ class PipelineConfig:
 class Config:
     splitter: SplitterConfig = field(default_factory=SplitterConfig)
     embedding: EmbeddingConfig = field(default_factory=EmbeddingConfig)
+    vectorstore: VectorStoreConfig = field(default_factory=VectorStoreConfig)
     retriever: RetrieverConfig = field(default_factory=RetrieverConfig)
     reranker: RerankerConfig = field(default_factory=RerankerConfig)
     generator: GeneratorConfig = field(default_factory=GeneratorConfig)

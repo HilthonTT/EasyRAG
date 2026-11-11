@@ -17,7 +17,7 @@ Question ─────────────► Retriever ◄─────
 | `loaders`      | `BaseLoader`      | `TextLoader`, `PDFLoader`, `HTMLLoader`, `DirectoryLoader` |
 | `splitters`    | `BaseSplitter`    | `RecursiveCharacterSplitter`, `CharacterSplitter` |
 | `embeddings`   | `BaseEmbeddings`  | `HashingEmbeddings`, `SentenceTransformerEmbeddings`, `OpenAIEmbeddings`, `FakeEmbeddings` (tests) |
-| `vectorstores` | `BaseVectorStore` | `InMemoryVectorStore` (saved as NumPy `.npz`) |
+| `vectorstores` | `BaseVectorStore` | `InMemoryVectorStore` (saved as NumPy `.npz`), `FaissVectorStore` (`flat` or `hnsw`) |
 | `retrievers`   | `BaseRetriever`   | `VectorRetriever`, `BM25Retriever`, `HybridRetriever` (reciprocal rank fusion) |
 | `rerankers`    | `BaseReranker`    | `CrossEncoderReranker` |
 | `generators`   | `BaseGenerator`   | `EchoGenerator`, `AnthropicGenerator`, `OpenAIGenerator`, `OllamaGenerator` |
@@ -28,7 +28,8 @@ Question ─────────────► Retriever ◄─────
 `build_pipeline` picks the pipeline class by `pipeline.type`. If a reranker is configured,
 `BasePipeline.retrieve` fetches `reranker.fetch_k` candidates and reranks them down to `top_k`.
 `BasePipeline.save` / `load` write the chunks and vectors to `pipeline.index_dir`, and re-embed
-when the saved embedding model differs from the configured one.
+when the saved embedding model differs from the configured one. Vector files load into either
+store, so switching `vectorstore.provider` does not re-embed.
 
 ## Pipelines
 

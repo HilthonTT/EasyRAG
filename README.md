@@ -21,7 +21,7 @@ uv sync
 ```
 
 Optional extras: `uv sync --extra openai`, `--extra anthropic`, `--extra huggingface`,
-`--extra pdf`, or `--extra all`.
+`--extra pdf`, `--extra faiss`, or `--extra all`.
 
 ## Quickstart
 
@@ -60,6 +60,8 @@ an environment variable `EASYRAG_<SECTION>_<KEY>`, for example `EASYRAG_RETRIEVE
 The defaults run fully offline (hashing embeddings, hybrid search, and an `echo` generator that
 returns the prompt). Set `embedding.provider` and `generator.provider` for real models.
 API keys go in `.env` (copy `.env.example`).
+For large indexes, `uv sync --extra faiss` and set `vectorstore.provider: faiss` (with
+`vectorstore.index: hnsw` for approximate search at millions of chunks).
 
 ## Docker
 

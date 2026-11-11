@@ -92,3 +92,14 @@ def test_pipeline_saves_npz_and_still_loads_a_version_1_index(
     # Saving again upgrades it: the stale JSON file is replaced by .npz.
     old.save(tmp_path)
     assert sorted(p.name for p in tmp_path.glob("vectors_*")) == ["vectors_0.npz"]
+
+
+def test_delete_removes_chunks_and_their_vectors() -> None:
+    store = _store()
+    assert store.delete([CHUNKS[1].id, "unknown"]) == 1
+    assert len(store) == 2
+    assert [r.chunk.id for r in store.search([0.0, 1.0], 3)] == [CHUNKS[2].id, CHUNKS[0].id]
+    assert store.delete([c.id for c in CHUNKS]) == 2
+    assert store.search([0.0, 1.0], 3) == []
+    store.add(CHUNKS[:1], VECTORS[:1])  # usable again after emptying
+    assert len(store) == 1

@@ -9,6 +9,7 @@ from easyrag.config import (
     RerankerConfig,
     RetrieverConfig,
     SplitterConfig,
+    VectorStoreConfig,
 )
 from easyrag.embeddings import BaseEmbeddings, HashingEmbeddings
 from easyrag.evaluation.judge import LLMJudge
@@ -16,6 +17,7 @@ from easyrag.generators import BaseGenerator, EchoGenerator
 from easyrag.rerankers import BaseReranker
 from easyrag.retrievers import BaseRetriever, BM25Retriever, HybridRetriever, VectorRetriever
 from easyrag.splitters import BaseSplitter, CharacterSplitter, RecursiveCharacterSplitter
+from easyrag.vectorstores import BaseVectorStore, InMemoryVectorStore
 
 
 def build_splitter(cfg: SplitterConfig) -> BaseSplitter:
@@ -45,15 +47,29 @@ def build_embeddings(cfg: EmbeddingConfig) -> BaseEmbeddings:
     raise ValueError(f"Unknown embedding.provider: {cfg.provider!r}")
 
 
-def build_retriever(cfg: RetrieverConfig, embeddings: BaseEmbeddings) -> BaseRetriever:
+def build_vectorstore(cfg: VectorStoreConfig) -> BaseVectorStore:
+    if cfg.provider in ("memory", "in_memory"):
+        return InMemoryVectorStore()
+    if cfg.provider == "faiss":
+        from easyrag.vectorstores.faiss import FaissVectorStore
+
+        return FaissVectorStore(cfg.index)
+    raise ValueError(f"Unknown vectorstore.provider: {cfg.provider!r}")
+
+
+def build_retriever(
+    cfg: RetrieverConfig,
+    embeddings: BaseEmbeddings,
+    vectorstore: VectorStoreConfig | None = None,
+) -> BaseRetriever:
+    store_cfg = vectorstore or VectorStoreConfig()
     if cfg.method == "vector":
-        return VectorRetriever(embeddings, top_k=cfg.top_k)
+        return VectorRetriever(embeddings, build_vectorstore(store_cfg), top_k=cfg.top_k)
     if cfg.method == "bm25":
         return BM25Retriever(top_k=cfg.top_k)
     if cfg.method == "hybrid":
-        return HybridRetriever(
-            [BM25Retriever(), VectorRetriever(embeddings)], top_k=cfg.top_k, rrf_k=cfg.rrf_k
-        )
+        dense = VectorRetriever(embeddings, build_vectorstore(store_cfg))
+        return HybridRetriever([BM25Retriever(), dense], top_k=cfg.top_k, rrf_k=cfg.rrf_k)
     raise ValueError(f"Unknown retriever.method: {cfg.method!r}")
 
 
@@ -90,7 +106,9 @@ def build_generator(cfg: GeneratorConfig, section: str = "generator") -> BaseGen
 def build_components(config: Config) -> dict[str, Any]:
     """Keyword arguments for any `BasePipeline` subclass constructor."""
     return {
-        "retriever": build_retriever(config.retriever, build_embeddings(config.embedding)),
+        "retriever": build_retriever(
+            config.retriever, build_embeddings(config.embedding), config.vectorstore
+        ),
         "generator": build_generator(config.generator),
         "splitter": build_splitter(config.splitter),
         "reranker": build_reranker(config.reranker),

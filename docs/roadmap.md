@@ -53,7 +53,8 @@ Most RAG failures are retrieval failures.
 ## 4. Practical features
 
 - [x] **Persistence:** `easyrag index` saves chunks and vectors; `ask` / `chat` load them
-- [ ] **Vector database:** FAISS, Chroma or Qdrant store for indexes beyond ~100k chunks
+- [x] **Vector database:** `FaissVectorStore` (`vectorstore.provider: faiss`, `--extra faiss`),
+      exact `flat` or approximate `hnsw` index for indexes beyond ~100k chunks
 - [ ] **Incremental indexing:** add, update or remove documents in a saved index
 - [x] **More loaders:** PDF (`--extra pdf`), HTML
 - [x] **Citations:** the model cites `[1]`, `[2]` passages and the CLI lists the sources

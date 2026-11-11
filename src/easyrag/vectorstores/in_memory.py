@@ -1,20 +1,20 @@
 from __future__ import annotations
 
-import json
+from collections.abc import Collection
 from pathlib import Path
 from typing import Any
 
 import numpy as np
 
 from easyrag.schema import Chunk, RetrievedChunk
-from easyrag.vectorstores.base import BaseVectorStore
+from easyrag.vectorstores.base import BaseVectorStore, normalize_rows, read_vectors
 
 
 class InMemoryVectorStore(BaseVectorStore):
     """Brute-force cosine similarity over all stored vectors, persisted as a NumPy `.npz` file.
 
-    Exact and simple; good up to roughly 100k chunks. Beyond that, add a FAISS/Chroma/Qdrant store
-    behind the same interface.
+    Exact and simple; good up to roughly 100k chunks. Beyond that, use `FaissVectorStore`
+    (`vectorstore.provider: faiss`).
     """
 
     def __init__(self) -> None:
@@ -36,7 +36,7 @@ class InMemoryVectorStore(BaseVectorStore):
         if matrix.ndim != 2 or (self._blocks and matrix.shape[1] != self._blocks[0].shape[1]):
             raise ValueError(f"embedding shape {matrix.shape} does not match the stored vectors")
         self.chunks.extend(chunks)
-        self._blocks.append(_normalize_rows(matrix))
+        self._blocks.append(normalize_rows(matrix))
 
     def _matrix(self) -> Any:
         if len(self._blocks) > 1:
@@ -46,12 +46,22 @@ class InMemoryVectorStore(BaseVectorStore):
     def search(self, query_embedding: list[float], top_k: int) -> list[RetrievedChunk]:
         if not self.chunks or top_k <= 0:
             return []
-        query = _normalize_rows(np.asarray(query_embedding, dtype=np.float32)[None, :])[0]
+        query = normalize_rows(np.asarray(query_embedding, dtype=np.float32)[None, :])[0]
         scores = self._matrix() @ query
         k = min(top_k, len(scores))
         best = np.argpartition(-scores, k - 1)[:k]
         ranked = sorted(best.tolist(), key=lambda i: -float(scores[i]))
         return [RetrievedChunk(self.chunks[i], float(scores[i])) for i in ranked]
+
+    def delete(self, chunk_ids: Collection[str]) -> int:
+        ids = set(chunk_ids)
+        keep = [i for i, c in enumerate(self.chunks) if c.id not in ids]
+        removed = len(self.chunks) - len(keep)
+        if removed:
+            matrix = self._matrix()
+            self.chunks = [self.chunks[i] for i in keep]
+            self._blocks = [matrix[keep]] if keep else []
+        return removed
 
     def save(self, path: str | Path) -> None:
         """Write chunk ids and vectors to `path` (an `.npz` file, written as named)."""
@@ -63,19 +73,8 @@ class InMemoryVectorStore(BaseVectorStore):
     def load(self, path: str | Path, chunks: dict[str, Chunk]) -> None:
         """Add the vectors saved at `path`; `chunks` maps saved ids to their chunks.
 
-        Also reads the JSON files written by EasyRAG before index format version 2.
+        Also reads FAISS-store files and the JSON written before index format version 2.
         """
-        path = Path(path)
-        if path.suffix == ".json":
-            data = json.loads(path.read_text(encoding="utf-8"))
-            ids, vectors = data["ids"], np.asarray(data["vectors"], dtype=np.float32)
-        else:
-            with np.load(path, allow_pickle=False) as data:
-                ids, vectors = data["ids"].tolist(), data["vectors"]
+        ids, vectors = read_vectors(path)
         if ids:
             self._add_matrix([chunks[i] for i in ids], vectors)
-
-
-def _normalize_rows(matrix: Any) -> Any:
-    norms = np.linalg.norm(matrix, axis=1, keepdims=True)
-    return matrix / np.where(norms == 0, 1, norms)  # zero vectors stay zero
