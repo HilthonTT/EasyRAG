@@ -6,9 +6,11 @@ import argparse
 import io
 import json
 import sys
+from collections.abc import Iterator
 from pathlib import Path
 
 from easyrag.config import Config
+from easyrag.conversation import Conversation
 from easyrag.evaluation.citations import invalid_citations
 from easyrag.factory import build_judge, build_pipeline
 from easyrag.loaders.directory import DirectoryLoader
@@ -91,18 +93,7 @@ def main(argv: list[str] | None = None) -> None:
     if args.command == "ask":
         _answer(pipeline, args.question, args.show_context)
     elif args.command == "chat":
-        print("Ask a question (empty line or Ctrl+C to quit).")
-        while True:
-            try:
-                question = input("\n> ").strip()
-            except (EOFError, KeyboardInterrupt):
-                break
-            if not question:
-                break
-            try:
-                _answer(pipeline, question, args.show_context)
-            except KeyboardInterrupt:  # stop this answer, keep the session
-                print("\n[interrupted]")
+        _chat(Conversation(pipeline, config.pipeline.chat_history), args.show_context)
     elif args.command == "eval":
         from easyrag.evaluation import evaluate, load_examples
 
@@ -164,8 +155,36 @@ def _prepare(pipeline: BasePipeline, docs: str | None, index_dir: Path) -> None:
             raise SystemExit(f"{e}\nOr pass --docs <folder> to index on the fly.") from None
 
 
+def _chat(conversation: Conversation, show_context: bool) -> None:
+    print("Ask a question (/new to start over, empty line or Ctrl+C to quit).")
+    while True:
+        try:
+            question = input("\n> ").strip()
+        except (EOFError, KeyboardInterrupt):
+            break
+        if not question:
+            break
+        if question == "/new":
+            conversation.reset()
+            print("Started a new conversation.")
+            continue
+        try:
+            standalone, contexts, answer = conversation.stream(question)
+            if standalone != question:  # show how the follow-up was understood
+                print(f"(searching for: {standalone})")
+            _print_answer(contexts, answer, show_context)
+        except KeyboardInterrupt:  # stop this answer, keep the session (the turn is not kept)
+            print("\n[interrupted]")
+
+
 def _answer(pipeline: BasePipeline, question: str, show_context: bool) -> None:
     contexts, answer = pipeline.stream(question)
+    _print_answer(contexts, answer, show_context)
+
+
+def _print_answer(
+    contexts: list[RetrievedChunk], answer: Iterator[str], show_context: bool
+) -> None:
     if show_context:
         _print_contexts(contexts)
     pieces = []

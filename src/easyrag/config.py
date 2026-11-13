@@ -62,6 +62,7 @@ class PipelineConfig:
     type: str = "naive"
     max_iterations: int = 3  # rounds or searches: iterative, self_ask, ircot, self_rag, agent
     num_queries: int = 3  # multi_query: LLM rewrites searched alongside the question
+    chat_history: int = 5  # chat: earlier turns used to rewrite follow-ups (0 = no memory)
     index_dir: str = ".rag_index"
 
 

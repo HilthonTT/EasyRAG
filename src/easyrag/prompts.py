@@ -68,6 +68,17 @@ SELF_RAG_SUPPORT_PROMPT = """Passages:
 
 Answer: {answer}"""
 
+# Conversational RAG ("condense question"). The transcript lives in the system prompt so the user
+# prompt is only the follow-up: a generator that echoes its prompt returns it unchanged.
+CONDENSE_QUESTION_SYSTEM_PROMPT = """You help a search engine in a conversation. Rewrite the
+user's latest message as one standalone question that can be understood without the
+conversation below: replace pronouns and references such as "it", "they", "that one" or "the
+second" with what they refer to, and add any missing subject. If the message already stands on
+its own, repeat it unchanged. Write only the question.
+
+Conversation so far:
+{history}"""
+
 QUERY_REWRITE_SYSTEM_PROMPT = """The search for the user's question found nothing useful.
 Rewrite it as one better search query: name the specific things to look up and use the words a
 reference document would use. Write only the query."""

@@ -1,6 +1,7 @@
 """rag: a simple, modular Retrieval-Augmented Generation toolkit."""
 
 from easyrag.config import Config
+from easyrag.conversation import Conversation
 from easyrag.factory import build_pipeline
 from easyrag.pipelines import (
     AgentPipeline,
@@ -21,6 +22,7 @@ __all__ = [
     "BasePipeline",
     "Chunk",
     "Config",
+    "Conversation",
     "Document",
     "HyDEPipeline",
     "IRCOTPipeline",

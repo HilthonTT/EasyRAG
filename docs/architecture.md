@@ -56,6 +56,13 @@ The multi-step pipelines (`iterative` and below) retrieve based on generated tex
 (`Retrieve: yes`, `Action: search[...]`), so they work with every generator; a reply they cannot
 parse falls back to plain retrieve-then-generate.
 
+## Chat
+
+`Conversation` wraps any pipeline for multi-turn chat (`easyrag chat`). Before each follow-up,
+the LLM rewrites it as a standalone question using the last `pipeline.chat_history` turns
+("Who leads it?" becomes "Who leads Nimbus?"), and the pipeline searches for and answers that
+question. The CLI prints the rewritten question when it differs; `/new` clears the history.
+
 ## Citations
 
 The system prompt asks the model to cite passages as `[1]`, `[2][3]`. `easyrag ask` warns when a
