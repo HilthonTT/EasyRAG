@@ -12,10 +12,10 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
-openai = ["openai>=3.45.0"]
-anthropic = ["anthropic>=2.4.0"]
+openai = ["openai>=3.49.0"]
+anthropic = ["anthropic>=2.8.0"]
 huggingface = ["sentence-transformers>=3.0"]
-pdf = ["pypdf>=6.21.4"]
+pdf = ["pypdf>=7.0.1"]
 faiss = ["faiss-cpu>=1.9"]
 all = ["easyrag[openai,anthropic,huggingface,pdf,faiss]"]
 
@@ -26,7 +26,7 @@ easyrag = "easyrag.cli:main"
 dev = [
     "pytest>=9.2.0",
     "pytest-cov>=5.0",
-    "ruff>=0.17.3",
+    "ruff>=0.17.4",
     "mypy>=2.4.1",
     "pre-commit>=3.7",
     "types-PyYAML",
