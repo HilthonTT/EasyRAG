@@ -63,6 +63,7 @@ def test_follow_up_is_rewritten_with_the_history() -> None:
     assert "User: What is Nimbus?\nAssistant: Nimbus is a weather app [1]." in system
     assert response.question == "Who leads it?"
     assert response.metadata["standalone_question"] == "Who leads Nimbus?"
+    assert response.metadata["searched"] is True
     assert response.contexts[0].chunk.source == "nimbus.md"
     assert "Who leads Nimbus?" in generator.calls[2][1]  # the answer prompt
 
@@ -97,6 +98,24 @@ def test_empty_rewrite_falls_back_to_the_question() -> None:
     chat.run("What is Nimbus?")
 
     assert chat.run("Who leads it?").metadata["standalone_question"] == "Who leads it?"
+
+
+@pytest.mark.parametrize("marker", ["NO_SEARCH", "`NO_SEARCH`", "No search.", "no-search"])
+def test_no_search_follow_up_is_answered_from_the_conversation(marker: str) -> None:
+    long_answer = "Nimbus is a weather app [1]. " + "It shows forecasts. " * 50
+    generator = _ScriptedGenerator([long_answer, marker, "Nimbus is a weather app."])
+    chat = _conversation(generator)
+    chat.run("What is Nimbus?")
+
+    response = chat.run("Make that shorter")
+
+    system, prompt = generator.calls[2]
+    assert prompt == "Make that shorter"
+    assert system is not None and long_answer.strip() in system  # the last answer is not cut
+    assert response.contexts == []
+    assert response.metadata == {"standalone_question": None, "searched": False}
+    assert chat.history[-1].standalone is None
+    assert "User: Make that shorter\n" in chat._format(chat.history)
 
 
 def test_unfinished_answer_is_not_kept() -> None:

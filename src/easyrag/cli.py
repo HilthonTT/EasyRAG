@@ -170,7 +170,9 @@ def _chat(conversation: Conversation, show_context: bool) -> None:
             continue
         try:
             standalone, contexts, answer = conversation.stream(question)
-            if standalone != question:  # show how the follow-up was understood
+            if standalone is None:  # answered from the conversation, so no sources
+                print("(answering from the conversation, no search)")
+            elif standalone != question:  # show how the follow-up was understood
                 print(f"(searching for: {standalone})")
             _print_answer(contexts, answer, show_context)
         except KeyboardInterrupt:  # stop this answer, keep the session (the turn is not kept)

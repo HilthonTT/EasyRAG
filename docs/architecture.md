@@ -61,7 +61,10 @@ parse falls back to plain retrieve-then-generate.
 `Conversation` wraps any pipeline for multi-turn chat (`easyrag chat`). Before each follow-up,
 the LLM rewrites it as a standalone question using the last `pipeline.chat_history` turns
 ("Who leads it?" becomes "Who leads Nimbus?"), and the pipeline searches for and answers that
-question. The CLI prints the rewritten question when it differs; `/new` clears the history.
+question. Follow-ups about the conversation itself ("make that shorter", "thanks!") need no
+search: the LLM writes `NO_SEARCH` instead of a question, and the reply is written from the
+transcript alone, with no passages. The CLI prints the rewritten question when it differs, or
+that it answered without a search; `/new` clears the history.
 
 ## Citations
 

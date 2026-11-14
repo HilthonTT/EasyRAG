@@ -76,6 +76,19 @@ conversation below: replace pronouns and references such as "it", "they", "that 
 second" with what they refer to, and add any missing subject. If the message already stands on
 its own, repeat it unchanged. Write only the question.
 
+If the message needs no search because it is about the conversation itself (asking to shorten,
+simplify, translate, rephrase or repeat an earlier answer, or small talk such as thanks), write
+only NO_SEARCH instead.
+
+Conversation so far:
+{history}"""
+
+# Chat turns that need no search (see NO_SEARCH above) are answered from the transcript alone.
+CHAT_REPLY_SYSTEM_PROMPT = """You are continuing the conversation below. Reply to the user's
+latest message using only what was said in it: do not add facts that are not in the
+conversation, and do not use citation numbers such as [1]. If the conversation does not contain
+what the user asks for, say so.
+
 Conversation so far:
 {history}"""
 

@@ -6,6 +6,10 @@ them as written finds the wrong passages. `Conversation` keeps the recent turns 
 follow-up, asks the LLM to rewrite it as a standalone question (LangChain's "condense question"
 step). The pipeline then searches for and answers that question, so this works with every
 `pipeline.type`.
+
+Some follow-ups need no search: "make that shorter", "translate it to French", "thanks!". For
+those the LLM writes `NO_SEARCH` instead of a question, and the reply is written from the
+transcript alone, with no passages.
 """
 
 from __future__ import annotations
@@ -15,18 +19,23 @@ from collections.abc import Iterator
 from dataclasses import dataclass
 
 from easyrag.pipelines.base import BasePipeline
-from easyrag.prompts import CONDENSE_QUESTION_SYSTEM_PROMPT
+from easyrag.prompts import CHAT_REPLY_SYSTEM_PROMPT, CONDENSE_QUESTION_SYSTEM_PROMPT
 from easyrag.schema import RAGResponse, RetrievedChunk
 
 _PREFIX = re.compile(r"^\s*(?:standalone\s+question|question)\s*:\s*", re.IGNORECASE)
+_NO_SEARCH = re.compile(r"^\W*no[\s_-]?search\W*$", re.IGNORECASE)
+
+NO_SEARCH = "NO_SEARCH"
+"""What `standalone_question` returns for a follow-up the conversation alone can answer."""
 
 
 @dataclass
 class Turn:
-    """One exchange. `standalone` is what was searched for (the question, rewritten if needed)."""
+    """One exchange. `standalone` is what was searched for (the question, rewritten if needed),
+    or `None` if the turn was answered from the conversation without a search."""
 
     question: str
-    standalone: str
+    standalone: str | None
     answer: str
 
 
@@ -45,7 +54,8 @@ class Conversation:
         self.history.clear()
 
     def standalone_question(self, question: str) -> str:
-        """`question` rewritten to make sense without the conversation (unchanged on turn one)."""
+        """`question` rewritten to make sense without the conversation (unchanged on turn one),
+        or `NO_SEARCH` if the conversation alone can answer it."""
         turns = self._recent_turns()
         if not turns:
             return question
@@ -55,14 +65,21 @@ class Conversation:
         raw = self.pipeline.generator.generate(question, system=system)
         return self._parse(raw) or question
 
-    def stream(self, question: str) -> tuple[str, list[RetrievedChunk], Iterator[str]]:
+    def stream(self, question: str) -> tuple[str | None, list[RetrievedChunk], Iterator[str]]:
         """Return the standalone question, the contexts and an iterator over the answer.
 
-        The turn is added to the history once the answer has been read to the end.
+        The standalone question is `None` (and there are no contexts) when the follow-up was
+        answered from the conversation without a search. The turn is added to the history once
+        the answer has been read to the end.
         """
-        standalone = self.standalone_question(question)
-        contexts, answer = self.pipeline.stream(standalone)
-        return standalone, contexts, self._record(question, standalone, answer)
+        rewritten = self.standalone_question(question)
+        if rewritten != NO_SEARCH:
+            contexts, answer = self.pipeline.stream(rewritten)
+            return rewritten, contexts, self._record(question, rewritten, answer)
+        history = self._format(self._recent_turns(), full_last_answer=True)
+        system = CHAT_REPLY_SYSTEM_PROMPT.format(history=history)
+        answer = self.pipeline.generator.stream(question, system=system)
+        return None, [], self._record(question, None, answer)
 
     def run(self, question: str) -> RAGResponse:
         standalone, contexts, answer = self.stream(question)
@@ -70,10 +87,12 @@ class Conversation:
             question=question,
             answer="".join(answer),
             contexts=contexts,
-            metadata={"standalone_question": standalone},
+            metadata={"standalone_question": standalone, "searched": standalone is not None},
         )
 
-    def _record(self, question: str, standalone: str, answer: Iterator[str]) -> Iterator[str]:
+    def _record(
+        self, question: str, standalone: str | None, answer: Iterator[str]
+    ) -> Iterator[str]:
         pieces = []
         for piece in answer:
             pieces.append(piece)
@@ -83,19 +102,26 @@ class Conversation:
     def _recent_turns(self) -> list[Turn]:
         return self.history[-self.max_turns :] if self.max_turns else []
 
-    def _format(self, turns: list[Turn]) -> str:
+    def _format(self, turns: list[Turn], full_last_answer: bool = False) -> str:
+        """The transcript. Long answers are cut, except the last one with `full_last_answer`
+        (a reply to "make that shorter" needs all of it)."""
         lines = []
-        for turn in turns:
-            answer = " ".join(turn.answer.split())
-            if len(answer) > self.max_answer_chars:
-                answer = answer[: self.max_answer_chars].rstrip() + " ..."
-            lines.append(f"User: {turn.standalone}\nAssistant: {answer}")
+        for i, turn in enumerate(turns):
+            if full_last_answer and i == len(turns) - 1:
+                answer = turn.answer.strip()
+            else:
+                answer = " ".join(turn.answer.split())
+                if len(answer) > self.max_answer_chars:
+                    answer = answer[: self.max_answer_chars].rstrip() + " ..."
+            lines.append(f"User: {turn.standalone or turn.question}\nAssistant: {answer}")
         return "\n\n".join(lines)
 
     @staticmethod
     def _parse(raw: str) -> str:
         for line in raw.splitlines():
             line = _PREFIX.sub("", line).strip().strip('"').strip()
+            if _NO_SEARCH.match(line):
+                return NO_SEARCH
             if line:
                 return line
         return ""
