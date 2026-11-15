@@ -11,7 +11,7 @@ class Usage:
     input_tokens: int = 0
     output_tokens: int = 0
 
-    def __sub__(self, other: "Usage") -> "Usage":
+    def __sub__(self, other: Usage) -> Usage:
         return Usage(
             self.calls - other.calls,
             self.input_tokens - other.input_tokens,
