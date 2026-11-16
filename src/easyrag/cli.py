@@ -13,6 +13,7 @@ from easyrag.config import Config
 from easyrag.conversation import Conversation
 from easyrag.evaluation.citations import invalid_citations
 from easyrag.factory import build_judge, build_pipeline
+from easyrag.generators.base import Usage
 from easyrag.loaders.directory import DirectoryLoader
 from easyrag.pipelines.base import BasePipeline
 from easyrag.schema import Document, RetrievedChunk
@@ -106,9 +107,18 @@ def main(argv: list[str] | None = None) -> None:
         for name, value in report.summary.items():
             print(f"{name:>16}: {value:.3f}")
         print(f"{'questions':>16}: {len(report.results)}")
+        if not args.retrieval_only or report.usage.calls:  # hyde searches with generated text
+            _print_usage("generation", report.usage)
+            if judge is not None:
+                _print_usage("judge", report.judge_usage)
         if args.output:
             Path(args.output).write_text(json.dumps(report.to_dict(), indent=2), encoding="utf-8")
             print(f"Per-question results -> {args.output}")
+
+
+def _print_usage(label: str, usage: Usage) -> None:
+    tokens = f", {usage.input_tokens:,} in / {usage.output_tokens:,} out tokens"
+    print(f"{label:>16}: {usage.calls:,} LLM calls" + (tokens if usage.calls else ""))
 
 
 def _add_query_options(p: argparse.ArgumentParser) -> None:

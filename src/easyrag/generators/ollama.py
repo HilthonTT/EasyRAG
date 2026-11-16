@@ -35,10 +35,20 @@ class OllamaGenerator(BaseGenerator):
 
     def generate(self, prompt: str, system: str | None = None) -> str:
         with self._request(prompt, system, stream=False) as response:
-            return str(json.loads(response.read())["message"]["content"])
+            data = json.loads(response.read())
+        self._record_usage(data)
+        return str(data["message"]["content"])
 
     def stream(self, prompt: str, system: str | None = None) -> Iterator[str]:
         with self._request(prompt, system, stream=True) as response:
+            final: dict[str, Any] = {}
             for line in response:
                 if line.strip():
-                    yield json.loads(line).get("message", {}).get("content", "")
+                    data = json.loads(line)
+                    if data.get("done"):  # the last line carries the token counts
+                        final = data
+                    yield data.get("message", {}).get("content", "")
+        self._record_usage(final)
+
+    def _record_usage(self, data: dict[str, Any]) -> None:
+        self._record(data.get("prompt_eval_count"), data.get("eval_count"))

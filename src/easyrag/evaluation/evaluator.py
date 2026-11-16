@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import json
-from dataclasses import dataclass, field
+from dataclasses import asdict, dataclass, field, replace
 from pathlib import Path, PurePosixPath
 from typing import Any
 
@@ -14,6 +14,7 @@ from easyrag.evaluation.metrics import (
     reciprocal_rank,
     token_f1,
 )
+from easyrag.generators.base import Usage
 from easyrag.pipelines.base import BasePipeline
 from easyrag.prompts import format_context
 
@@ -32,11 +33,23 @@ class EvalResult:
     retrieved_sources: list[str]
     scores: dict[str, float]
     judge_reasons: dict[str, str] = field(default_factory=dict)
+    usage: Usage = field(default_factory=Usage)  # LLM use answering the question
+    judge_usage: Usage = field(default_factory=Usage)  # LLM use grading the answer
 
 
 @dataclass
 class EvalReport:
     results: list[EvalResult]
+
+    @property
+    def usage(self) -> Usage:
+        """LLM calls and tokens spent answering, summed over all questions."""
+        return sum((r.usage for r in self.results), Usage())
+
+    @property
+    def judge_usage(self) -> Usage:
+        """LLM calls and tokens spent by the judge, summed over all questions."""
+        return sum((r.judge_usage for r in self.results), Usage())
 
     @property
     def summary(self) -> dict[str, float]:
@@ -50,6 +63,7 @@ class EvalReport:
     def to_dict(self) -> dict[str, Any]:
         return {
             "summary": self.summary,
+            "usage": {"generation": asdict(self.usage), "judge": asdict(self.judge_usage)},
             "results": [
                 {
                     "question": r.example.question,
@@ -59,6 +73,8 @@ class EvalReport:
                     "retrieved_sources": r.retrieved_sources,
                     "scores": r.scores,
                     "judge_reasons": r.judge_reasons,
+                    "usage": asdict(r.usage),
+                    "judge_usage": asdict(r.judge_usage),
                 }
                 for r in self.results
             ],
@@ -115,11 +131,16 @@ def evaluate(
         )
     results = []
     for example in examples:
+        # Snapshots, so each question's usage is measured on its own. The judge is measured
+        # separately, which also works when it shares the pipeline's generator.
+        before = replace(pipeline.generator.usage)
         if generate:
             response = pipeline.run(example.question)
             contexts, answer = response.contexts, response.answer
         else:
             contexts, answer = pipeline.retrieve_for(example.question), ""
+
+        usage = pipeline.generator.usage - before
 
         retrieved = [Path(c.chunk.source).as_posix() for c in contexts]
         scores: dict[str, float] = {}
@@ -134,6 +155,7 @@ def evaluate(
             scores["f1"] = token_f1(answer, example.answers)
         if generate and (validity := citation_validity(answer, len(contexts))) is not None:
             scores["citation_valid"] = validity
+        judge_before = replace(judge.generator.usage) if judge is not None else Usage()
         if generate and judge is not None:
             if example.answers:
                 scores["judge_correct"], reasons["judge_correct"] = judge.correctness(
@@ -146,5 +168,6 @@ def evaluate(
             )
             if (support := judge.citation_support(answer, contexts)) is not None:
                 scores["citation_support"], reasons["citation_support"] = support
-        results.append(EvalResult(example, answer, retrieved, scores, reasons))
+        judge_usage = judge.generator.usage - judge_before if judge is not None else Usage()
+        results.append(EvalResult(example, answer, retrieved, scores, reasons, usage, judge_usage))
     return EvalReport(results)

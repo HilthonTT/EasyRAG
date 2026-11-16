@@ -25,6 +25,10 @@ Change one setting at a time with environment variables, e.g. `EASYRAG_RETRIEVER
 of them appears in the generated answer, so each question lists several phrasings ("10 days",
 "ten days").
 
+With generation, `eval` also prints how many LLM calls and tokens the answers (and the judge)
+used, and `--output` stores them per question under `usage` and `judge_usage`. Record them next
+to answer scores: multi-step pipelines can cost several times more than `naive`.
+
 `tests/unit/test_eval_set.py` checks that every source names exactly one document and that an
 accepted answer appears in it. Run it after editing the set.
 

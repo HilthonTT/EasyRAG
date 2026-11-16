@@ -29,6 +29,7 @@ class OpenAIGenerator(BaseGenerator):
         response = self.client.chat.completions.create(
             model=self.model, max_tokens=self.max_tokens, messages=self._messages(prompt, system)
         )
+        self._record_usage(response.usage)
         return response.choices[0].message.content or ""
 
     def stream(self, prompt: str, system: str | None = None) -> Iterator[str]:
@@ -37,7 +38,19 @@ class OpenAIGenerator(BaseGenerator):
             max_tokens=self.max_tokens,
             messages=self._messages(prompt, system),
             stream=True,
+            stream_options={"include_usage": True},
         )
+        usage = None
         for event in stream:
             if event.choices and event.choices[0].delta.content:
                 yield event.choices[0].delta.content
+            if getattr(event, "usage", None) is not None:  # sent in the last chunk
+                usage = event.usage
+        self._record_usage(usage)
+
+    def _record_usage(self, usage: Any) -> None:
+        # Some OpenAI-compatible servers omit usage; still count the call
+        if usage is None:
+            self._record()
+        else:
+            self._record(usage.prompt_tokens, usage.completion_tokens)

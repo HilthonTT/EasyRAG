@@ -31,8 +31,18 @@ class AnthropicGenerator(BaseGenerator):
             params["system"] = system
         return params
 
+    def _record_usage(self, usage: Any) -> None:
+        # Cached prompt tokens are reported separately from input_tokens; count them all as input
+        self._record(
+            (usage.input_tokens or 0)
+            + (getattr(usage, "cache_creation_input_tokens", 0) or 0)
+            + (getattr(usage, "cache_read_input_tokens", 0) or 0),
+            usage.output_tokens,
+        )
+
     def generate(self, prompt: str, system: str | None = None) -> str:
         response = self.client.beta.messages.create(**self._params(prompt, system))
+        self._record_usage(response.usage)
         if response.stop_reason == "refusal":
             raise RuntimeError("The model declined to answer this request.")
         return "".join(b.text for b in response.content if b.type == "text")
@@ -40,5 +50,7 @@ class AnthropicGenerator(BaseGenerator):
     def stream(self, prompt: str, system: str | None = None) -> Iterator[str]:
         with self.client.beta.messages.stream(**self._params(prompt, system)) as stream:
             yield from stream.text_stream
-            if stream.get_final_message().stop_reason == "refusal":
+            final = stream.get_final_message()
+            self._record_usage(final.usage)
+            if final.stop_reason == "refusal":
                 raise RuntimeError("The model declined to answer this request.")
