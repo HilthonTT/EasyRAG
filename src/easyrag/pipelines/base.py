@@ -8,6 +8,7 @@ from pathlib import Path
 from typing import Any, ClassVar, TypeVar
 
 from easyrag.config import Config
+from easyrag.filters import MetadataFilter
 from easyrag.generators.base import BaseGenerator
 from easyrag.prompts import DEFAULT_RAG_PROMPT, SYSTEM_PROMPT
 from easyrag.rerankers.base import BaseReranker
@@ -45,6 +46,7 @@ class BasePipeline(ABC):
         fetch_k: int = 20,
         prompt_template: str = DEFAULT_RAG_PROMPT,
         system_prompt: str = SYSTEM_PROMPT,
+        filter: MetadataFilter | None = None,
     ) -> None:
         self.retriever = retriever
         self.generator = generator
@@ -54,6 +56,9 @@ class BasePipeline(ABC):
         self.fetch_k = fetch_k
         self.prompt_template = prompt_template
         self.system_prompt = system_prompt
+        # Every search is restricted to chunks matching this (see `easyrag.filters`); settable
+        # between questions, e.g. `pipeline.filter = {"source": "*handbook/*"}`.
+        self.filter = filter
         self.chunks: list[Chunk] = []
 
     @classmethod
@@ -155,9 +160,15 @@ class BasePipeline(ABC):
         relevance to what the user actually asked.
         """
         if self.reranker is None:
-            return self.retriever.retrieve(query, self.top_k)
-        candidates = self.retriever.retrieve(query, max(self.fetch_k, self.top_k))
+            return self.search(query, self.top_k)
+        candidates = self.search(query, max(self.fetch_k, self.top_k))
         return self.reranker.rerank(question or query, candidates, self.top_k)
+
+    def search(self, query: str, top_k: int) -> list[RetrievedChunk]:
+        """One retriever call with `self.filter` applied, without reranking."""
+        if self.filter is None:  # custom retrievers may predate the filter argument
+            return self.retriever.retrieve(query, top_k)
+        return self.retriever.retrieve(query, top_k, filter=self.filter)
 
     def retrieve_for(self, question: str) -> list[RetrievedChunk]:
         """The contexts for `question`, retrieved the way this pipeline searches.

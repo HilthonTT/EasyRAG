@@ -54,6 +54,19 @@ Pipelines (`pipeline.type`): `naive`, `hyde`, `multi_query`, `step_back`, `itera
 `ircot`, `self_rag` and `agent`. For example,
 `EASYRAG_PIPELINE_TYPE=self_ask uv run easyrag ask "..."`.
 
+To search only part of the index, filter on chunk metadata (`source`, `page`, or anything your
+loader sets). Globs are allowed, a repeated key accepts any of its values, and different keys must
+all match:
+
+```bash
+uv run easyrag ask --filter "source=*handbook/*" "How many vacation days do I get?"
+uv run easyrag ask --filter "source=*manual.pdf" --filter page=3 --filter page=4 "..."
+```
+
+In Python, set `pipeline.filter = {"source": "*handbook/*"}` (or pass `filter=` to
+`from_config`); every search the pipeline makes, including rewrites and follow-ups, is restricted.
+A callable `chunk -> bool` works too, and retrievers accept `retrieve(query, top_k, filter=...)`.
+
 See [docs/architecture.md](docs/architecture.md) for how the pieces fit together.
 
 ## Configuration

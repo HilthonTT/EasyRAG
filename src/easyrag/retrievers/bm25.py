@@ -5,6 +5,7 @@ import math
 from collections import Counter, defaultdict
 from collections.abc import Collection
 
+from easyrag.filters import MetadataFilter, compile_filter
 from easyrag.retrievers.base import BaseRetriever
 from easyrag.schema import Chunk, RetrievedChunk
 from easyrag.text import tokenize
@@ -42,7 +43,9 @@ class BM25Retriever(BaseRetriever):
         self._postings = defaultdict(list)
         self.add_chunks(kept)
 
-    def retrieve(self, query: str, top_k: int | None = None) -> list[RetrievedChunk]:
+    def retrieve(
+        self, query: str, top_k: int | None = None, filter: MetadataFilter | None = None
+    ) -> list[RetrievedChunk]:
         n = len(self.chunks)
         if n == 0:
             return []
@@ -58,5 +61,10 @@ class BM25Retriever(BaseRetriever):
                 tf = self._term_freqs[i][term]
                 norm = self.k1 * (1 - self.b + self.b * self._doc_lengths[i] / avg_len)
                 scores[i] += idf * tf * (self.k1 + 1) / (tf + norm)
+        predicate = compile_filter(filter)
+        if predicate is not None:  # only chunks that matched a term need checking
+            scores = defaultdict(
+                float, {i: s for i, s in scores.items() if predicate(self.chunks[i])}
+            )
         best = heapq.nlargest(top_k or self.top_k, scores.items(), key=lambda kv: kv[1])
         return [RetrievedChunk(self.chunks[i], score) for i, score in best]

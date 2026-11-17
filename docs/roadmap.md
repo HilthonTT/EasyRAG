@@ -60,6 +60,8 @@ Most RAG failures are retrieval failures.
 - [x] **Incremental indexing:** `easyrag index --update` re-indexes changed files, adds new ones and
       drops deleted ones; `easyrag remove` drops files (`BasePipeline.update` / `remove`)
 - [x] **More loaders:** PDF (`--extra pdf`), HTML
+- [x] **Metadata filtering:** `--filter source='*handbook/*'` / `pipeline.filter` restricts every
+      search to matching chunks (`easyrag.filters`; exact within the filter for memory and FAISS)
 - [x] **Citations:** the model cites `[1]`, `[2]` passages and the CLI lists the sources
 - [x] Check citations: `citation_valid` (numbers point at real passages; `ask` warns otherwise)
       and, with `--judge`, `citation_support` (the cited passages support the sentence)

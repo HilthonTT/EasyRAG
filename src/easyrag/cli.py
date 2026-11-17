@@ -13,6 +13,7 @@ from easyrag.config import Config
 from easyrag.conversation import Conversation
 from easyrag.evaluation.citations import invalid_citations
 from easyrag.factory import build_judge, build_pipeline
+from easyrag.filters import compile_filter, parse_filter_args
 from easyrag.generators.base import Usage
 from easyrag.loaders.directory import DirectoryLoader
 from easyrag.pipelines.base import BasePipeline
@@ -60,10 +61,15 @@ def main(argv: list[str] | None = None) -> None:
         "--judge", action="store_true", help="Also grade correctness and faithfulness with an LLM"
     )
     ev.add_argument("--output", help="Write per-question results to this JSON file")
+    _add_filter_option(ev)
 
     args = parser.parse_args(argv)
     if getattr(args, "judge", False) and args.retrieval_only:
         parser.error("--judge needs generated answers; drop --retrieval-only")
+    try:
+        metadata_filter = parse_filter_args(getattr(args, "filter", None) or [])
+    except ValueError as e:
+        parser.error(str(e))
     try:
         config = Config.load(args.config)
         pipeline = build_pipeline(config)
@@ -90,6 +96,8 @@ def main(argv: list[str] | None = None) -> None:
         return
 
     _prepare(pipeline, getattr(args, "docs", None), index_dir)
+    if metadata_filter:
+        _apply_filter(pipeline, metadata_filter)
 
     if args.command == "ask":
         _answer(pipeline, args.question, args.show_context)
@@ -124,6 +132,28 @@ def _print_usage(label: str, usage: Usage) -> None:
 def _add_query_options(p: argparse.ArgumentParser) -> None:
     p.add_argument("--docs", help="Index these documents on the fly instead of the saved index")
     p.add_argument("--show-context", action="store_true", help="Print the retrieved passages")
+    _add_filter_option(p)
+
+
+def _add_filter_option(p: argparse.ArgumentParser) -> None:
+    p.add_argument(
+        "--filter",
+        action="append",
+        metavar="KEY=VALUE",
+        help="Only search chunks whose metadata matches, e.g. source='*handbook/*' or page=3. "
+        "Glob patterns allowed; repeat a key to accept any of its values, repeat with different "
+        "keys to require all",
+    )
+
+
+def _apply_filter(pipeline: BasePipeline, metadata_filter: dict[str, object]) -> None:
+    pipeline.filter = metadata_filter
+    predicate = compile_filter(metadata_filter)
+    matching = sum(1 for c in pipeline.chunks if predicate is None or predicate(c))
+    shown = ", ".join(f"{k}={v}" for k, v in metadata_filter.items())
+    if not matching:
+        raise SystemExit(f"No indexed chunks match the filter ({shown}).")
+    print(f"Filter {shown}: {matching} of {len(pipeline.chunks)} chunks.", file=sys.stderr)
 
 
 def _load(docs: str, glob: str = "**/*") -> list[Document]:

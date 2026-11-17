@@ -61,9 +61,7 @@ class MultiQueryPipeline(NaiveRAGPipeline):
         if len(queries) == 1:
             return self.retrieve(queries[0], question)
         k = max(self.fetch_k, self.top_k) if self.reranker is not None else self.top_k * 2
-        fused = reciprocal_rank_fusion(
-            [self.retriever.retrieve(q, k) for q in queries], rrf_k=self.rrf_k
-        )
+        fused = reciprocal_rank_fusion([self.search(q, k) for q in queries], rrf_k=self.rrf_k)
         if self.reranker is None:
             return fused[: self.top_k]
         return self.reranker.rerank(question, fused[:k], self.top_k)

@@ -3,6 +3,7 @@ from __future__ import annotations
 from collections.abc import Collection
 
 from easyrag.embeddings.base import BaseEmbeddings
+from easyrag.filters import MetadataFilter, compile_filter
 from easyrag.retrievers.base import BaseRetriever
 from easyrag.schema import Chunk, RetrievedChunk
 from easyrag.vectorstores.base import BaseVectorStore
@@ -30,5 +31,11 @@ class VectorRetriever(BaseRetriever):
     def remove_chunks(self, chunk_ids: Collection[str]) -> None:
         self.vectorstore.delete(chunk_ids)
 
-    def retrieve(self, query: str, top_k: int | None = None) -> list[RetrievedChunk]:
-        return self.vectorstore.search(self.embeddings.embed_query(query), top_k or self.top_k)
+    def retrieve(
+        self, query: str, top_k: int | None = None, filter: MetadataFilter | None = None
+    ) -> list[RetrievedChunk]:
+        embedding = self.embeddings.embed_query(query)
+        predicate = compile_filter(filter)
+        if predicate is None:  # stores written before filtering existed take no filter argument
+            return self.vectorstore.search(embedding, top_k or self.top_k)
+        return self.vectorstore.search(embedding, top_k or self.top_k, filter=predicate)

@@ -1,6 +1,7 @@
 from collections import defaultdict
 from collections.abc import Collection, Sequence
 
+from easyrag.filters import MetadataFilter, compile_filter
 from easyrag.retrievers.base import BaseRetriever
 from easyrag.schema import Chunk, RetrievedChunk
 
@@ -63,8 +64,13 @@ class HybridRetriever(BaseRetriever):
         for retriever in self.retrievers:
             retriever.remove_chunks(chunk_ids)
 
-    def retrieve(self, query: str, top_k: int | None = None) -> list[RetrievedChunk]:
+    def retrieve(
+        self, query: str, top_k: int | None = None, filter: MetadataFilter | None = None
+    ) -> list[RetrievedChunk]:
         top_k = top_k or self.top_k
         fetch_k = max(self.fetch_k or 0, top_k * 2)
-        result_lists = [retriever.retrieve(query, fetch_k) for retriever in self.retrievers]
+        predicate = compile_filter(filter)  # compile once for every sub-retriever
+        result_lists = [
+            retriever.retrieve(query, fetch_k, filter=predicate) for retriever in self.retrievers
+        ]
         return reciprocal_rank_fusion(result_lists, self.weights, self.rrf_k)[:top_k]

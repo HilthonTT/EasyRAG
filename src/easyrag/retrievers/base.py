@@ -3,6 +3,7 @@ from __future__ import annotations
 from abc import ABC, abstractmethod
 from collections.abc import Collection
 
+from easyrag.filters import MetadataFilter
 from easyrag.schema import Chunk, RetrievedChunk
 
 
@@ -21,5 +22,10 @@ class BaseRetriever(ABC):
         raise NotImplementedError(f"{type(self).__name__} does not support removing chunks")
 
     @abstractmethod
-    def retrieve(self, query: str, top_k: int | None = None) -> list[RetrievedChunk]:
-        """Return up to `top_k` (default `self.top_k`) chunks, most relevant first."""
+    def retrieve(
+        self, query: str, top_k: int | None = None, filter: MetadataFilter | None = None
+    ) -> list[RetrievedChunk]:
+        """Return up to `top_k` (default `self.top_k`) chunks, most relevant first.
+
+        With `filter` (see `easyrag.filters`), only chunks whose metadata matches are returned.
+        """

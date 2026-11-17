@@ -6,6 +6,7 @@ from typing import Any
 
 import numpy as np
 
+from easyrag.filters import ChunkPredicate
 from easyrag.schema import Chunk, RetrievedChunk
 from easyrag.vectorstores.base import BaseVectorStore, normalize_rows, read_vectors
 
@@ -66,17 +67,43 @@ class FaissVectorStore(BaseVectorStore):
         self._index.add(np.ascontiguousarray(normalize_rows(matrix), dtype=np.float32))
         self.chunks.extend(chunks)
 
-    def search(self, query_embedding: list[float], top_k: int) -> list[RetrievedChunk]:
+    def search(
+        self, query_embedding: list[float], top_k: int, filter: ChunkPredicate | None = None
+    ) -> list[RetrievedChunk]:
         if not self.chunks or top_k <= 0:
             return []
-        query = normalize_rows(np.asarray(query_embedding, dtype=np.float32)[None, :])
-        k = min(top_k, len(self.chunks))
+        query = np.ascontiguousarray(
+            normalize_rows(np.asarray(query_embedding, dtype=np.float32)[None, :])
+        )
+        if filter is None:
+            k = min(top_k, len(self.chunks))
+            if self.index_type == "hnsw":
+                self._index.hnsw.efSearch = max(self.ef_search, k)
+            scores, positions = self._index.search(query, k)
+            return self._results(scores[0], positions[0])
+
+        allowed = np.flatnonzero([filter(c) for c in self.chunks]).astype(np.int64)
+        if allowed.size == 0:
+            return []
+        k = min(top_k, int(allowed.size))
+        selector = self._faiss.IDSelectorBatch(allowed)
         if self.index_type == "hnsw":
-            self._index.hnsw.efSearch = max(self.ef_search, k)
-        scores, positions = self._index.search(np.ascontiguousarray(query), k)
+            params = self._faiss.SearchParametersHNSW(sel=selector, efSearch=max(self.ef_search, k))
+        else:
+            params = self._faiss.SearchParameters(sel=selector)
+        scores, positions = self._index.search(query, k, params=params)
+        results = self._results(scores[0], positions[0])
+        if len(results) < k:  # a selective filter can cut HNSW's graph walk short: search exactly
+            vectors = np.stack([self._index.reconstruct(int(i)) for i in allowed])
+            exact = vectors @ query[0]
+            order = np.argsort(-exact)[:k]
+            results = [RetrievedChunk(self.chunks[int(allowed[i])], float(exact[i])) for i in order]
+        return results
+
+    def _results(self, scores: Any, positions: Any) -> list[RetrievedChunk]:
         return [
             RetrievedChunk(self.chunks[int(i)], float(s))
-            for s, i in zip(scores[0], positions[0], strict=True)
+            for s, i in zip(scores, positions, strict=True)
             if i >= 0  # FAISS pads with -1 when it finds fewer than k
         ]
 

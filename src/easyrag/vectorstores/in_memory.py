@@ -6,6 +6,7 @@ from typing import Any
 
 import numpy as np
 
+from easyrag.filters import ChunkPredicate
 from easyrag.schema import Chunk, RetrievedChunk
 from easyrag.vectorstores.base import BaseVectorStore, normalize_rows, read_vectors
 
@@ -43,15 +44,25 @@ class InMemoryVectorStore(BaseVectorStore):
             self._blocks = [np.concatenate(self._blocks)]
         return self._blocks[0]
 
-    def search(self, query_embedding: list[float], top_k: int) -> list[RetrievedChunk]:
+    def search(
+        self, query_embedding: list[float], top_k: int, filter: ChunkPredicate | None = None
+    ) -> list[RetrievedChunk]:
         if not self.chunks or top_k <= 0:
             return []
         query = normalize_rows(np.asarray(query_embedding, dtype=np.float32)[None, :])[0]
-        scores = self._matrix() @ query
+        matrix = self._matrix()
+        if filter is None:
+            positions = np.arange(len(self.chunks))
+        else:
+            positions = np.flatnonzero([filter(c) for c in self.chunks])
+            if positions.size == 0:
+                return []
+            matrix = matrix[positions]
+        scores = matrix @ query
         k = min(top_k, len(scores))
         best = np.argpartition(-scores, k - 1)[:k]
         ranked = sorted(best.tolist(), key=lambda i: -float(scores[i]))
-        return [RetrievedChunk(self.chunks[i], float(scores[i])) for i in ranked]
+        return [RetrievedChunk(self.chunks[positions[i]], float(scores[i])) for i in ranked]
 
     def delete(self, chunk_ids: Collection[str]) -> int:
         ids = set(chunk_ids)

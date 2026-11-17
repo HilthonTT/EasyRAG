@@ -8,6 +8,7 @@ from typing import Any
 
 import numpy as np
 
+from easyrag.filters import ChunkPredicate
 from easyrag.schema import Chunk, RetrievedChunk
 
 
@@ -19,8 +20,10 @@ class BaseVectorStore(ABC):
         """Store chunks with their embeddings (same order, same length)."""
 
     @abstractmethod
-    def search(self, query_embedding: list[float], top_k: int) -> list[RetrievedChunk]:
-        """Return the `top_k` most similar chunks, best first."""
+    def search(
+        self, query_embedding: list[float], top_k: int, filter: ChunkPredicate | None = None
+    ) -> list[RetrievedChunk]:
+        """Return the `top_k` most similar chunks, best first, among those `filter` accepts."""
 
     @abstractmethod
     def __len__(self) -> int: ...
