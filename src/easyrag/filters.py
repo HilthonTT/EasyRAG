@@ -47,9 +47,15 @@ def compile_filter(filter: MetadataFilter | None) -> ChunkPredicate | None:
 def _matches(value: Any, want: Any) -> bool:
     if isinstance(want, list | tuple | set | frozenset):
         return any(_matches(value, w) for w in want)
+    if isinstance(value, bool) or isinstance(want, bool):
+        # True == 1 in Python, but a flag should not match a page number; "true" from the CLI
+        # should match True.
+        return str(value).lower() == str(want).lower()
+    if bool(value == want) or str(value) == str(want):
+        return True  # checked first, so a literal value like "notes[1].md" matches itself
     if isinstance(want, str) and _GLOB_CHARS.intersection(want):
         return fnmatchcase(str(value).replace("\\", "/"), want.replace("\\", "/"))
-    return bool(value == want) or str(value) == str(want)
+    return False
 
 
 def parse_filter_args(items: list[str]) -> dict[str, Any]:

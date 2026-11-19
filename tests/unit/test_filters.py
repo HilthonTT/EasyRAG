@@ -65,6 +65,25 @@ def test_exact_value_without_glob_chars() -> None:
     assert not match(_chunk(lang="english"))
 
 
+def test_literal_value_with_glob_chars_matches_itself() -> None:
+    match = compile_filter({"source": "notes[1].md"})
+    assert match is not None
+    assert match(_chunk(source="notes[1].md"))
+    assert match(_chunk(source="notes1.md"))  # still a glob too
+    assert not match(_chunk(source="notes2.md"))
+
+
+def test_booleans_do_not_match_numbers() -> None:
+    flag = compile_filter({"draft": "true"})  # as it comes from the CLI
+    assert flag is not None
+    assert flag(_chunk(draft=True))
+    assert not flag(_chunk(draft=False))
+    page = compile_filter({"page": 1})
+    assert page is not None
+    assert not page(_chunk(page=True))
+    assert page(_chunk(page=1))
+
+
 def test_parse_filter_args_groups_repeated_keys() -> None:
     parsed = parse_filter_args(["source=*.md", "page=1", "page=2", "page=3", "q=a=b"])
     assert parsed == {"source": "*.md", "page": ["1", "2", "3"], "q": "a=b"}
