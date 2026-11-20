@@ -100,3 +100,31 @@ def test_save_removes_vector_files_of_retrievers_that_are_gone(
     lexical.save(tmp_path)
 
     assert not list(tmp_path.glob("vectors_*"))
+
+
+# --- config -----------------------------------------------------------------------------------
+
+
+def test_misspelled_boolean_is_an_error_not_false(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv("EASYRAG_CACHE_LLM", "ture")
+    with pytest.raises(ValueError, match="EASYRAG_CACHE_LLM"):
+        Config().apply_env_overrides()
+
+
+@pytest.mark.parametrize("value, expected", [("off", False), ("0", False), ("YES", True)])
+def test_boolean_spellings(value: str, expected: bool) -> None:
+    assert Config.from_dict({"cache": {"llm": value}}).cache.llm is expected
+
+
+@pytest.mark.parametrize(
+    "raw, match",
+    [
+        ({"retriever": {"top_k": 0}}, "retriever.top_k"),
+        ({"pipeline": {"max_iterations": -1}}, "pipeline.max_iterations"),
+        ({"reranker": {"fetch_k": 0}}, "reranker.fetch_k"),
+        ({"splitter": {"chunk_size": 100, "chunk_overlap": 100}}, "chunk_overlap"),
+    ],
+)
+def test_out_of_range_values_are_rejected(raw: dict[str, Any], match: str) -> None:
+    with pytest.raises(ValueError, match=match):
+        NaiveRAGPipeline.from_config(Config.from_dict(raw))

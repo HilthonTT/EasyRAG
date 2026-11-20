@@ -138,13 +138,31 @@ class Config:
                         raise ValueError(f"Invalid value for {name}: {e}") from e
                     setattr(current, f.name, value)
 
+    def validate(self) -> None:
+        """Raise ValueError for numbers out of range (e.g. `top_k: 0`), which would otherwise
+        fail late or be silently replaced by a default."""
+        for (section, key), minimum in _MINIMUMS.items():
+            value = getattr(getattr(self, section), key)
+            if value < minimum:
+                raise ValueError(f"{section}.{key} must be at least {minimum}, got {value}")
+        if self.splitter.chunk_overlap >= self.splitter.chunk_size:
+            raise ValueError(
+                f"splitter.chunk_overlap ({self.splitter.chunk_overlap}) must be smaller than "
+                f"splitter.chunk_size ({self.splitter.chunk_size})"
+            )
+
     def to_dict(self) -> dict[str, Any]:
         return asdict(self)
 
 
 def _coerce(value: Any, target: type) -> Any:
     if target is bool:
-        return value if isinstance(value, bool) else str(value).strip().lower() in _TRUE
+        if isinstance(value, bool):
+            return value
+        text = str(value).strip().lower()
+        if text in _TRUE or text in _FALSE:
+            return text in _TRUE
+        raise ValueError(f"expected true/false, got {value!r}")  # a typo must not mean False
     if isinstance(value, bool):  # bool is an int subclass: `top_k: true` must not pass as 1
         raise ValueError(f"expected {target.__name__}, got {value!r}")
     if isinstance(value, target):
@@ -162,6 +180,24 @@ def _coerce(value: Any, target: type) -> Any:
 
 
 _TRUE = {"1", "true", "yes", "on"}
+_FALSE = {"0", "false", "no", "off", ""}
+
+# (section, key) -> smallest allowed value, checked by `Config.validate`.
+_MINIMUMS: dict[tuple[str, str], int] = {
+    ("splitter", "chunk_size"): 1,
+    ("splitter", "chunk_overlap"): 0,
+    ("embedding", "batch_size"): 1,
+    ("retriever", "top_k"): 1,
+    ("retriever", "rrf_k"): 0,
+    ("reranker", "fetch_k"): 1,
+    ("generator", "max_tokens"): 1,
+    ("generator", "max_retries"): 0,
+    ("judge", "max_tokens"): 1,
+    ("judge", "max_retries"): 0,
+    ("pipeline", "max_iterations"): 1,
+    ("pipeline", "num_queries"): 0,
+    ("pipeline", "chat_history"): 0,
+}
 
 
 def load_dotenv(path: str | Path = ".env") -> None:

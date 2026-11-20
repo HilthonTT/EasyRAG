@@ -131,6 +131,7 @@ def cached_generator(generator: BaseGenerator, cfg: CacheConfig) -> BaseGenerato
 
 def build_components(config: Config) -> dict[str, Any]:
     """Keyword arguments for any `BasePipeline` subclass constructor."""
+    config.validate()
     embeddings = cached_embeddings(build_embeddings(config.embedding), config.cache)
     return {
         "retriever": build_retriever(config.retriever, embeddings, config.vectorstore),
