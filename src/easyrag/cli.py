@@ -21,9 +21,17 @@ from easyrag.schema import Document, RetrievedChunk
 
 
 def main(argv: list[str] | None = None) -> None:
-    if isinstance(sys.stdout, io.TextIOWrapper):  # Windows consoles default to a legacy code page
-        sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+    for stream in (sys.stdout, sys.stderr):  # Windows consoles default to a legacy code page
+        if isinstance(stream, io.TextIOWrapper):
+            stream.reconfigure(encoding="utf-8", errors="replace")
+    try:
+        _main(argv)
+    except KeyboardInterrupt:
+        print("\nInterrupted.", file=sys.stderr)
+        raise SystemExit(130) from None
 
+
+def _main(argv: list[str] | None) -> None:
     parser = argparse.ArgumentParser(
         prog="easyrag", description="Retrieval-Augmented Generation CLI"
     )
@@ -196,7 +204,7 @@ def _index(pipeline: BasePipeline, docs: str, glob: str = "**/*") -> tuple[int, 
 def _update(pipeline: BasePipeline, docs: str, glob: str, index_dir: Path) -> None:
     """Refresh the saved index (if any) with the current contents of `docs`."""
     if (index_dir / "manifest.json").exists():
-        pipeline.load(index_dir)
+        _load_index(pipeline, index_dir)
     documents = _load(docs, glob)
     added, removed = pipeline.update(documents)
     removed += pipeline.remove_missing(docs)
@@ -212,9 +220,20 @@ def _prepare(pipeline: BasePipeline, docs: str | None, index_dir: Path) -> None:
         print(f"Indexed {n_docs} documents into {n_chunks} chunks.", file=sys.stderr)
     else:
         try:
-            pipeline.load(index_dir)
+            _load_index(pipeline, index_dir)
         except FileNotFoundError as e:
             raise SystemExit(f"{e}\nOr pass --docs <folder> to index on the fly.") from None
+
+
+def _load_index(pipeline: BasePipeline, index_dir: Path) -> None:
+    try:
+        pipeline.load(index_dir)
+    except (OSError, ValueError, KeyError, TypeError) as e:  # unreadable or corrupt index
+        if isinstance(e, FileNotFoundError) and not (index_dir / "manifest.json").exists():
+            raise  # no index at all, not a broken one
+        raise SystemExit(
+            f"Could not load the index at {index_dir}: {e}\nRebuild it with `easyrag index <docs>`."
+        ) from None
 
 
 def _chat(conversation: Conversation, show_context: bool) -> None:

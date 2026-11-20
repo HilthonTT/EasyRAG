@@ -202,6 +202,16 @@ def test_cli_eval_reports_a_missing_dataset_without_traceback(
     assert "missing.jsonl" in capsys.readouterr().err
 
 
+def test_cli_reports_a_corrupt_index_without_traceback(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    index_dir = tmp_path / "index"
+    index_dir.mkdir()
+    (index_dir / "manifest.json").write_text("{not json", encoding="utf-8")
+    with pytest.raises(SystemExit, match="Could not load the index"):
+        main(["--index-dir", str(index_dir), "ask", "q"])
+
+
 # --- ollama -----------------------------------------------------------------------------------
 
 
