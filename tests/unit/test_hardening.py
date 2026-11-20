@@ -1,5 +1,6 @@
 """Regression tests for failure modes: interrupted saves, bad config values, bad input files."""
 
+import io
 import json
 import os
 from pathlib import Path
@@ -9,6 +10,7 @@ import pytest
 
 from easyrag import Config, Document, NaiveRAGPipeline
 from easyrag.config import load_dotenv
+from easyrag.generators.ollama import OllamaGenerator
 from easyrag.pipelines.base import INDEX_FORMAT_VERSION
 
 # --- index persistence ------------------------------------------------------------------------
@@ -144,3 +146,17 @@ def test_dotenv_handles_export_and_only_strips_matching_quotes(
 
     assert os.environ["EASYRAG_T1"] == "quoted"
     assert os.environ["EASYRAG_T2"] == 'ends-with"'
+
+
+# --- ollama -----------------------------------------------------------------------------------
+
+
+def test_ollama_stream_raises_on_an_error_line(monkeypatch: pytest.MonkeyPatch) -> None:
+    lines = b'{"message": {"content": "Hel"}}\n{"error": "model ran out of memory"}\n'
+    monkeypatch.setattr("urllib.request.urlopen", lambda request, timeout: io.BytesIO(lines))
+
+    pieces = OllamaGenerator(max_retries=0).stream("hi")
+
+    assert next(pieces) == "Hel"
+    with pytest.raises(RuntimeError, match="out of memory"):
+        next(pieces)

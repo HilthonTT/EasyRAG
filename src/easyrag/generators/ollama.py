@@ -83,6 +83,8 @@ class OllamaGenerator(BaseGenerator):
                 return data
 
         data = self._with_retries(attempt)
+        if "error" in data:
+            raise RuntimeError(f"Ollama error: {data['error']}")
         self._record_usage(data)
         return str(data["message"]["content"])
 
@@ -93,6 +95,8 @@ class OllamaGenerator(BaseGenerator):
             for line in response:
                 if line.strip():
                     data = json.loads(line)
+                    if "error" in data:  # e.g. the model crashed or ran out of memory mid-answer
+                        raise RuntimeError(f"Ollama error: {data['error']}")
                     if data.get("done"):  # the last line carries the token counts
                         final = data
                     yield data.get("message", {}).get("content", "")
