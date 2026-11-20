@@ -9,7 +9,9 @@ from typing import Any
 import pytest
 
 from easyrag import Config, Document, NaiveRAGPipeline
+from easyrag.cli import main
 from easyrag.config import load_dotenv
+from easyrag.evaluation import load_examples
 from easyrag.generators.ollama import OllamaGenerator
 from easyrag.loaders import DirectoryLoader
 from easyrag.pipelines.base import INDEX_FORMAT_VERSION
@@ -170,6 +172,34 @@ def test_directory_loader_skips_unreadable_files(
     assert [p.name for p, _ in loader.errors] == ["bad.html"]
     with pytest.raises(OSError):
         DirectoryLoader(tmp_path, skip_errors=False).load()
+
+
+@pytest.mark.parametrize(
+    "line, match",
+    [
+        ("not json", "line 2"),
+        ('{"answers": ["x"]}', '"question"'),
+        ('["a list"]', "JSON object"),
+        ('{"question": "q", "answers": "x"}', "must be lists"),
+    ],
+)
+def test_load_examples_names_the_bad_line(tmp_path: Path, line: str, match: str) -> None:
+    path = tmp_path / "eval.jsonl"
+    path.write_text('{"question": "ok"}\n' + line + "\n", encoding="utf-8")
+    with pytest.raises(ValueError, match=match):
+        load_examples(path)
+
+
+def test_cli_eval_reports_a_missing_dataset_without_traceback(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    docs = tmp_path / "docs"
+    docs.mkdir()
+    (docs / "a.txt").write_text("text", encoding="utf-8")
+    with pytest.raises(SystemExit) as exc:
+        main(["eval", str(tmp_path / "missing.jsonl"), "--docs", str(docs), "--retrieval-only"])
+    assert exc.value.code == 2
+    assert "missing.jsonl" in capsys.readouterr().err
 
 
 # --- ollama -----------------------------------------------------------------------------------

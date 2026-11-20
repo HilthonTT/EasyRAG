@@ -83,18 +83,31 @@ class EvalReport:
 
 
 def load_examples(path: str | Path) -> list[EvalExample]:
+    """Read a JSONL eval set. Raises ValueError naming the line of any malformed row."""
     examples = []
     with open(path, encoding="utf-8") as f:
-        for line in f:
-            if line.strip():
+        for number, line in enumerate(f, start=1):
+            if not line.strip():
+                continue
+            try:
                 data = json.loads(line)
-                examples.append(
-                    EvalExample(
-                        question=data["question"],
-                        answers=list(data.get("answers", [])),
-                        sources=list(data.get("sources", [])),
-                    )
+                if not isinstance(data, dict):
+                    raise ValueError("expected a JSON object")
+                question = data.get("question")
+                if not isinstance(question, str) or not question.strip():
+                    raise ValueError('needs a non-empty "question" string')
+                answers, sources = data.get("answers", []), data.get("sources", [])
+                if not isinstance(answers, list) or not isinstance(sources, list):
+                    raise ValueError('"answers" and "sources" must be lists')
+            except ValueError as e:  # json.JSONDecodeError is a ValueError too
+                raise ValueError(f"{path}, line {number}: {e}") from None
+            examples.append(
+                EvalExample(
+                    question=question,
+                    answers=[str(a) for a in answers],
+                    sources=[str(s) for s in sources],
                 )
+            )
     return examples
 
 

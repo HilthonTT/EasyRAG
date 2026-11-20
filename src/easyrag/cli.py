@@ -115,9 +115,15 @@ def main(argv: list[str] | None = None) -> None:
         from easyrag.evaluation import evaluate, load_examples
 
         try:
+            examples = load_examples(args.dataset)
+        except (OSError, ValueError) as e:  # missing file, or a malformed line
+            parser.error(str(e))
+        if not examples:
+            parser.error(f"No questions in {args.dataset}")
+        try:
             report = evaluate(
                 pipeline,
-                load_examples(args.dataset),
+                examples,
                 generate=not args.retrieval_only,
                 judge=judge,
                 workers=args.workers,
@@ -132,6 +138,7 @@ def main(argv: list[str] | None = None) -> None:
             if judge is not None:
                 _print_usage("judge", report.judge_usage)
         if args.output:
+            Path(args.output).parent.mkdir(parents=True, exist_ok=True)
             Path(args.output).write_text(json.dumps(report.to_dict(), indent=2), encoding="utf-8")
             print(f"Per-question results -> {args.output}")
 
