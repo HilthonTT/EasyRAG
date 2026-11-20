@@ -145,3 +145,9 @@ def test_cli_eval_prints_usage(tmp_path: Path, capsys: pytest.CaptureFixture[str
 
     main(["eval", str(dataset), "--docs", str(docs), "--retrieval-only"])
     assert "LLM calls" not in capsys.readouterr().out
+
+
+@pytest.mark.parametrize("url", ["file:///etc/passwd", "ftp://host", "localhost:11434", ""])
+def test_ollama_rejects_non_http_base_url(url: str) -> None:
+    with pytest.raises(ValueError, match="http"):
+        OllamaGenerator(base_url=url)

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import urllib.parse
 import urllib.request
 from collections.abc import Iterator
 from typing import Any
@@ -16,6 +17,9 @@ class OllamaGenerator(BaseGenerator):
         self, model: str = DEFAULT_MODEL, base_url: str = DEFAULT_BASE_URL, timeout: float = 300
     ):
         self.model = model
+        # urlopen also follows file:// and ftp:// URLs; only ever talk HTTP to a server.
+        if urllib.parse.urlsplit(base_url).scheme.lower() not in ("http", "https"):
+            raise ValueError(f"Ollama base_url must be an http(s) URL, got {base_url!r}")
         self.base_url = base_url.rstrip("/")
         self.timeout = timeout
 

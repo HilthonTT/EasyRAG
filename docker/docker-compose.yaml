@@ -36,7 +36,7 @@ services:
     volumes:
       - ollama:/root/.ollama
     ports:
-      - "11434:11434"
+      - "127.0.0.1:11434:11434" # Ollama has no auth: never publish it to the network
 
 volumes:
   model-cache:
