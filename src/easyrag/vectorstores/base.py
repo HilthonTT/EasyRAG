@@ -59,6 +59,16 @@ def read_vectors(path: str | Path) -> tuple[list[str], Any]:
         return ids, deserialize_vectors(data["faiss_index"])
 
 
+def read_vector_ids(path: str | Path) -> list[str]:
+    """Only the chunk ids of a saved vector file (any format `read_vectors` reads)."""
+    path = Path(path)
+    if path.suffix == ".json":
+        return list(json.loads(path.read_text(encoding="utf-8"))["ids"])
+    with np.load(path, allow_pickle=False) as data:  # loads arrays lazily, per key
+        ids: list[str] = data["ids"].tolist()
+        return ids
+
+
 def normalize_rows(matrix: Any) -> Any:
     norms = np.linalg.norm(matrix, axis=1, keepdims=True)
     return matrix / np.where(norms == 0, 1, norms)  # zero vectors stay zero

@@ -19,6 +19,7 @@ from easyrag.retrievers.vector import VectorRetriever
 from easyrag.schema import Chunk, Document, RAGResponse, RetrievedChunk
 from easyrag.splitters.base import BaseSplitter
 from easyrag.splitters.recursive import RecursiveCharacterSplitter
+from easyrag.vectorstores.base import read_vector_ids
 
 P = TypeVar("P", bound="BasePipeline")
 
@@ -190,7 +191,8 @@ class BasePipeline(ABC):
         """Write the index to the directory `path`.
 
         Every file is written under a temporary name first and only then renamed into place
-        (manifest last), so an interrupted save leaves the previous index readable.
+        (manifest last), so an interrupted save leaves the previous index readable; `load`
+        re-embeds if the chunks and vectors on disk still disagree.
         """
         path = Path(path)
         path.mkdir(parents=True, exist_ok=True)
@@ -235,6 +237,12 @@ class BasePipeline(ABC):
         if not manifest_path.exists():
             raise FileNotFoundError(f"No index found at {path}. Create one with `save()` first.")
         manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+        version = manifest.get("version", 1)
+        if not isinstance(version, int) or version > INDEX_FORMAT_VERSION:
+            raise ValueError(
+                f"The index at {path} has format version {version!r}, but this version of "
+                f"easyrag reads up to {INDEX_FORMAT_VERSION}. Upgrade easyrag or re-index."
+            )
         with open(path / "chunks.jsonl", encoding="utf-8") as f:
             chunks = [Chunk.from_dict(json.loads(line)) for line in f if line.strip()]
         by_id = {c.id: c for c in chunks}
@@ -246,7 +254,13 @@ class BasePipeline(ABC):
             same_model = (
                 i < len(saved_embeddings) and saved_embeddings[i] == retriever.embeddings.name
             )
-            if vectors_path is not None and same_model:
+            # Vectors for exactly the saved chunks, or the files are out of step (e.g. an index
+            # written by an older, non-atomic save that was interrupted): then re-embed.
+            if (
+                vectors_path is not None
+                and same_model
+                and _same_ids(read_vector_ids(vectors_path), chunks)
+            ):
                 retriever.vectorstore.load(vectors_path, by_id)
             else:
                 retriever.add_chunks(chunks)  # different model: re-embed
@@ -283,6 +297,10 @@ def _source_key(source: str) -> str:
 def _is_under(source: str, root: str | Path) -> bool:
     key, prefix = _source_key(source), _source_key(str(root))
     return key == prefix or key.startswith(prefix.rstrip(os.sep) + os.sep)
+
+
+def _same_ids(ids: list[str], chunks: list[Chunk]) -> bool:
+    return len(ids) == len(chunks) and set(ids) == {c.id for c in chunks}
 
 
 def _vectors_file(index_dir: Path, i: int) -> Path | None:
