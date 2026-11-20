@@ -210,6 +210,11 @@ def load_dotenv(path: str | Path = ".env") -> None:
         if not line or line.startswith("#") or "=" not in line:
             continue
         key, value = line.split("=", 1)
-        value = value.strip().strip("'\"")
-        if value:
-            os.environ.setdefault(key.strip(), value)
+        key = key.strip()
+        if key.startswith("export "):  # shell-style files: `export KEY=value`
+            key = key[len("export ") :].strip()
+        value = value.strip()
+        if len(value) >= 2 and value[0] == value[-1] and value[0] in "'\"":
+            value = value[1:-1]  # only a matching pair: a value may itself end in a quote
+        if key and value:
+            os.environ.setdefault(key, value)

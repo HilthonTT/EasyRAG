@@ -1,12 +1,14 @@
 """Regression tests for failure modes: interrupted saves, bad config values, bad input files."""
 
 import json
+import os
 from pathlib import Path
 from typing import Any
 
 import pytest
 
 from easyrag import Config, Document, NaiveRAGPipeline
+from easyrag.config import load_dotenv
 from easyrag.pipelines.base import INDEX_FORMAT_VERSION
 
 # --- index persistence ------------------------------------------------------------------------
@@ -128,3 +130,17 @@ def test_boolean_spellings(value: str, expected: bool) -> None:
 def test_out_of_range_values_are_rejected(raw: dict[str, Any], match: str) -> None:
     with pytest.raises(ValueError, match=match):
         NaiveRAGPipeline.from_config(Config.from_dict(raw))
+
+
+def test_dotenv_handles_export_and_only_strips_matching_quotes(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    env = tmp_path / ".env"
+    env.write_text("export EASYRAG_T1='quoted'\nEASYRAG_T2=ends-with\"\n", encoding="utf-8")
+    monkeypatch.delenv("EASYRAG_T1", raising=False)
+    monkeypatch.delenv("EASYRAG_T2", raising=False)
+
+    load_dotenv(env)
+
+    assert os.environ["EASYRAG_T1"] == "quoted"
+    assert os.environ["EASYRAG_T2"] == 'ends-with"'
