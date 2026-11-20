@@ -10,16 +10,25 @@ DEFAULT_MODEL = "gpt-4o-mini"
 
 class OpenAIGenerator(BaseGenerator):
     def __init__(
-        self, model: str = DEFAULT_MODEL, max_tokens: int = 4096, base_url: str | None = None
+        self,
+        model: str = DEFAULT_MODEL,
+        max_tokens: int = 4096,
+        base_url: str | None = None,
+        max_retries: int = 2,
     ) -> None:
         try:
             import openai
         except ImportError as e:
             raise ImportError("openai is not installed. Run: uv sync --extra openai") from e
 
-        self.client = openai.OpenAI(base_url=base_url or None)
+        self.client = openai.OpenAI(base_url=base_url or None, max_retries=max_retries)
+        self.base_url = base_url or ""
         self.model = model
         self.max_tokens = max_tokens
+
+    @property
+    def name(self) -> str:
+        return f"openai:{self.base_url}:{self.model}:max_tokens={self.max_tokens}"
 
     def _messages(self, prompt: str, system: str | None) -> list[dict[str, Any]]:
         messages = [{"role": "system", "content": system}] if system else []

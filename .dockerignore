@@ -11,6 +11,7 @@ htmlcov
 .env
 data
 .rag_index
+.rag_cache
 tests
 docs
 examples

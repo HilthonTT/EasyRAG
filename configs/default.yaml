@@ -31,6 +31,7 @@ generator:
   max_tokens: 16000
   effort: low # anthropic only: low | medium | high | xhigh | max
   base_url: "" # ollama / OpenAI-compatible servers
+  max_retries: 2 # retries of a failed request (connection error, timeout, 429, 5xx)
 
 pipeline:
   type: naive # naive | hyde | multi_query | step_back | iterative | self_ask | ircot | self_rag | agent
@@ -45,3 +46,9 @@ judge: # used by `easyrag eval --judge`
   max_tokens: 16000
   effort: low
   base_url: ""
+  max_retries: 2
+
+cache: # on-disk caches in cache.dir, off by default
+  dir: .rag_cache
+  embeddings: false # embed each distinct text once, so re-indexing unchanged text is free
+  llm: false # replay answers to identical prompts (generator and judge); off to measure variance

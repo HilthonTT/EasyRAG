@@ -65,6 +65,9 @@ Most RAG failures are retrieval failures.
 - [x] **Citations:** the model cites `[1]`, `[2]` passages and the CLI lists the sources
 - [x] Check citations: `citation_valid` (numbers point at real passages; `ask` warns otherwise)
       and, with `--judge`, `citation_support` (the cited passages support the sentence)
+- [x] **Robustness:** retries with backoff for every generator (`generator.max_retries`), on-disk
+      embedding and LLM caches (`cache.embeddings`, `cache.llm`; `easyrag.cache`), and parallel
+      evaluation (`easyrag eval --workers N`, `pipeline.batch(..., workers=N)`)
 
 ## 5. Advanced pipelines
 

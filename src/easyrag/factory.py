@@ -1,8 +1,10 @@
 from __future__ import annotations
 
+from pathlib import Path
 from typing import Any
 
 from easyrag.config import (
+    CacheConfig,
     Config,
     EmbeddingConfig,
     GeneratorConfig,
@@ -89,27 +91,50 @@ def build_generator(cfg: GeneratorConfig, section: str = "generator") -> BaseGen
     if cfg.provider == "anthropic":
         from easyrag.generators.anthropic import DEFAULT_MODEL, AnthropicGenerator
 
-        return AnthropicGenerator(cfg.model or DEFAULT_MODEL, cfg.effort, cfg.max_tokens)
+        return AnthropicGenerator(
+            cfg.model or DEFAULT_MODEL, cfg.effort, cfg.max_tokens, cfg.max_retries
+        )
     if cfg.provider == "openai":
         from easyrag.generators.openai import DEFAULT_MODEL as OPENAI_MODEL
         from easyrag.generators.openai import OpenAIGenerator
 
-        return OpenAIGenerator(cfg.model or OPENAI_MODEL, cfg.max_tokens, cfg.base_url or None)
+        return OpenAIGenerator(
+            cfg.model or OPENAI_MODEL, cfg.max_tokens, cfg.base_url or None, cfg.max_retries
+        )
     if cfg.provider == "ollama":
         from easyrag.generators.ollama import DEFAULT_BASE_URL, OllamaGenerator
         from easyrag.generators.ollama import DEFAULT_MODEL as OLLAMA_MODEL
 
-        return OllamaGenerator(cfg.model or OLLAMA_MODEL, cfg.base_url or DEFAULT_BASE_URL)
+        return OllamaGenerator(
+            cfg.model or OLLAMA_MODEL, cfg.base_url or DEFAULT_BASE_URL, max_retries=cfg.max_retries
+        )
     raise ValueError(f"Unknown {section}.provider: {cfg.provider!r}")
+
+
+def cached_embeddings(embeddings: BaseEmbeddings, cfg: CacheConfig) -> BaseEmbeddings:
+    """`embeddings`, behind the on-disk cache if `cache.embeddings` is on."""
+    if not cfg.embeddings:
+        return embeddings
+    from easyrag.cache import CachedEmbeddings
+
+    return CachedEmbeddings(embeddings, Path(cfg.dir) / "embeddings.sqlite")
+
+
+def cached_generator(generator: BaseGenerator, cfg: CacheConfig) -> BaseGenerator:
+    """`generator`, behind the on-disk cache if `cache.llm` is on."""
+    if not cfg.llm:
+        return generator
+    from easyrag.cache import CachedGenerator
+
+    return CachedGenerator(generator, Path(cfg.dir) / "llm.sqlite")
 
 
 def build_components(config: Config) -> dict[str, Any]:
     """Keyword arguments for any `BasePipeline` subclass constructor."""
+    embeddings = cached_embeddings(build_embeddings(config.embedding), config.cache)
     return {
-        "retriever": build_retriever(
-            config.retriever, build_embeddings(config.embedding), config.vectorstore
-        ),
-        "generator": build_generator(config.generator),
+        "retriever": build_retriever(config.retriever, embeddings, config.vectorstore),
+        "generator": cached_generator(build_generator(config.generator), config.cache),
         "splitter": build_splitter(config.splitter),
         "reranker": build_reranker(config.reranker),
         "top_k": config.retriever.top_k,
@@ -130,6 +155,7 @@ def build_pipeline(config: Config | None = None) -> Any:
 
 def build_judge(config: Config) -> LLMJudge:
     """LLM grader for `easyrag eval --judge`; uses `generator` when `judge.provider` is empty."""
-    if config.judge.provider:
-        return LLMJudge(build_generator(config.judge, "judge"))
-    return LLMJudge(build_generator(config.generator))
+    cfg, section = (
+        (config.judge, "judge") if config.judge.provider else (config.generator, "generator")
+    )
+    return LLMJudge(cached_generator(build_generator(cfg, section), config.cache))

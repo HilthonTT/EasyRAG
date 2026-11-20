@@ -39,11 +39,11 @@ RUN useradd --create-home --uid 1000 easyrag
 COPY --from=builder /opt/venv /opt/venv
 COPY configs /app/configs
 
-# The index lives on the mounted data volume so it survives the container. Model downloads
+# The index and the caches live on the mounted data volume so they survive the container. Model downloads
 # (huggingface extra) go to ~/.cache, which compose mounts as a named volume.
 ENV PATH="/opt/venv/bin:$PATH" \
     PYTHONUNBUFFERED=1 \
-    EASYRAG_PIPELINE_INDEX_DIR=/app/data/.rag_index
+    EASYRAG_PIPELINE_INDEX_DIR=/app/data/.rag_index     EASYRAG_CACHE_DIR=/app/data/.rag_cache
 
 WORKDIR /app
 RUN mkdir -p /app/data /home/easyrag/.cache \

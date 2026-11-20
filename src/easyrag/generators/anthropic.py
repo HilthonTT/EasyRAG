@@ -7,16 +7,26 @@ DEFAULT_MODEL = "claude-opus-5-5"
 
 
 class AnthropicGenerator(BaseGenerator):
-    def __init__(self, model: str = DEFAULT_MODEL, effort: str = "low", max_tokens: int = 16_000):
+    def __init__(
+        self,
+        model: str = DEFAULT_MODEL,
+        effort: str = "low",
+        max_tokens: int = 16_000,
+        max_retries: int = 2,
+    ):
         try:
             import anthropic
         except ImportError as e:
             raise ImportError("anthropic is not installed. Run: uv sync --extra anthropic") from e
 
-        self.client = anthropic.Anthropic()
+        self.client = anthropic.Anthropic(max_retries=max_retries)
         self.model = model
         self.effort = effort
         self.max_tokens = max_tokens
+
+    @property
+    def name(self) -> str:
+        return f"anthropic:{self.model}:effort={self.effort}:max_tokens={self.max_tokens}"
 
     def _params(self, prompt: str, system: str | None) -> dict[str, Any]:
         params: dict[str, Any] = {

@@ -222,3 +222,4 @@ __marimo__/
 # EasyRAG local data and indexes
 data/*
 !data/.gitkeep
+.rag_cache/

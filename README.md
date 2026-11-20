@@ -79,6 +79,13 @@ API keys go in `.env` (copy `.env.example`).
 For large indexes, `uv sync --extra faiss` and set `vectorstore.provider: faiss` (with
 `vectorstore.index: hnsw` for approximate search at millions of chunks).
 
+Failed LLM requests (connection errors, timeouts, rate limits, 5xx) are retried with backoff,
+`generator.max_retries` times (default 2). To stop paying twice for the same work, turn on the
+on-disk caches in `cache.dir`: `cache.embeddings: true` embeds each distinct text once, and
+`cache.llm: true` replays the answer to a prompt it has seen (handy for re-scoring an eval set;
+turn it off to measure how much answers vary). `easyrag eval --workers 8` answers questions in
+parallel, which mostly helps with API models.
+
 ## Docker
 
 Put your documents in `data/`, then from the repo root:

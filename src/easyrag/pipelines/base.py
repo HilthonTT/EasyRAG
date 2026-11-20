@@ -4,6 +4,7 @@ import json
 import os
 from abc import ABC, abstractmethod
 from collections.abc import Iterable, Iterator
+from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 from typing import Any, ClassVar, TypeVar
 
@@ -82,8 +83,15 @@ class BasePipeline(ABC):
     def run(self, question: str) -> RAGResponse:
         """Answer a single question."""
 
-    def batch(self, questions: list[str]) -> list[RAGResponse]:
-        return [self.run(q) for q in questions]
+    def batch(self, questions: list[str], workers: int = 1) -> list[RAGResponse]:
+        """Answer each question; `workers > 1` answers that many at once, in threads (useful
+        with API models). Responses keep the order of `questions`."""
+        if workers < 1:
+            raise ValueError(f"workers must be at least 1, got {workers}")
+        if workers == 1 or len(questions) < 2:
+            return [self.run(q) for q in questions]
+        with ThreadPoolExecutor(max_workers=workers) as pool:
+            return list(pool.map(self.run, questions))
 
     def stream(self, question: str) -> tuple[list[RetrievedChunk], Iterator[str]]:
         """Return the contexts and an iterator over the answer text."""

@@ -54,6 +54,7 @@ class GeneratorConfig:
     max_tokens: int = 16000
     effort: str = "low"  # Anthropic only: low | medium | high | xhigh | max
     base_url: str = ""  # Ollama / OpenAI-compatible servers
+    max_retries: int = 2  # retries of a failed request (connection error, timeout, 429, 5xx)
 
 
 @dataclass
@@ -64,6 +65,13 @@ class PipelineConfig:
     num_queries: int = 3  # multi_query: LLM rewrites searched alongside the question
     chat_history: int = 5  # chat: earlier turns used to rewrite follow-ups (0 = no memory)
     index_dir: str = ".rag_index"
+
+
+@dataclass
+class CacheConfig:
+    dir: str = ".rag_cache"
+    embeddings: bool = False  # store embeddings, so re-indexing unchanged text is free
+    llm: bool = False  # replay answers to identical prompts (generator and judge)
 
 
 @dataclass
@@ -78,6 +86,7 @@ class Config:
         default_factory=lambda: GeneratorConfig(provider="")
     )  # "" = same as generator
     pipeline: PipelineConfig = field(default_factory=PipelineConfig)
+    cache: CacheConfig = field(default_factory=CacheConfig)
 
     @classmethod
     def load(cls, path: str | Path | None = None) -> Config:

@@ -61,11 +61,19 @@ def main(argv: list[str] | None = None) -> None:
         "--judge", action="store_true", help="Also grade correctness and faithfulness with an LLM"
     )
     ev.add_argument("--output", help="Write per-question results to this JSON file")
+    ev.add_argument(
+        "--workers",
+        type=int,
+        default=1,
+        help="Answer this many questions at once (helps with API models; default 1)",
+    )
     _add_filter_option(ev)
 
     args = parser.parse_args(argv)
     if getattr(args, "judge", False) and args.retrieval_only:
         parser.error("--judge needs generated answers; drop --retrieval-only")
+    if getattr(args, "workers", 1) < 1:
+        parser.error("--workers must be at least 1")
     try:
         metadata_filter = parse_filter_args(getattr(args, "filter", None) or [])
     except ValueError as e:
@@ -108,7 +116,11 @@ def main(argv: list[str] | None = None) -> None:
 
         try:
             report = evaluate(
-                pipeline, load_examples(args.dataset), generate=not args.retrieval_only, judge=judge
+                pipeline,
+                load_examples(args.dataset),
+                generate=not args.retrieval_only,
+                judge=judge,
+                workers=args.workers,
             )
         except ValueError as e:
             parser.error(str(e))

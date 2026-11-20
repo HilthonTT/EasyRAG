@@ -1,7 +1,8 @@
 from __future__ import annotations
 
 import json
-from dataclasses import asdict, dataclass, field, replace
+from concurrent.futures import ThreadPoolExecutor
+from dataclasses import asdict, dataclass, field
 from pathlib import Path, PurePosixPath
 from typing import Any
 
@@ -14,7 +15,7 @@ from easyrag.evaluation.metrics import (
     reciprocal_rank,
     token_f1,
 )
-from easyrag.generators.base import Usage
+from easyrag.generators.base import Usage, track_usage
 from easyrag.pipelines.base import BasePipeline
 from easyrag.prompts import format_context
 
@@ -120,42 +121,59 @@ def evaluate(
     examples: list[EvalExample],
     generate: bool = True,
     judge: LLMJudge | None = None,
+    workers: int = 1,
 ) -> EvalReport:
     """Score each example. With `generate=False` only retrieval is measured (fast, no LLM cost).
-    With a `judge`, answers are also graded for correctness and faithfulness by an LLM."""
+    With a `judge`, answers are also graded for correctness and faithfulness by an LLM.
+
+    `workers > 1` answers that many questions at once (in threads), which mostly helps with
+    API models where each question waits on the network. Results keep the order of `examples`.
+    """
+    if workers < 1:
+        raise ValueError(f"workers must be at least 1, got {workers}")
     if not generate and pipeline.retrieval_needs_generation:
         raise ValueError(
             f"{type(pipeline).__name__} retrieves based on generated text, so retrieval-only "
             "scores would only reflect its first search. Evaluate with generation, or use "
             "pipeline.type naive for retrieval-only numbers."
         )
-    results = []
-    for example in examples:
-        # Snapshots, so each question's usage is measured on its own. The judge is measured
-        # separately, which also works when it shares the pipeline's generator.
-        before = replace(pipeline.generator.usage)
+
+    def score(example: EvalExample) -> EvalResult:
+        return _evaluate_one(pipeline, example, generate, judge)
+
+    if workers == 1 or len(examples) < 2:
+        return EvalReport([score(e) for e in examples])
+    with ThreadPoolExecutor(max_workers=workers) as pool:
+        return EvalReport(list(pool.map(score, examples)))
+
+
+def _evaluate_one(
+    pipeline: BasePipeline, example: EvalExample, generate: bool, judge: LLMJudge | None
+) -> EvalResult:
+    # Usage is tracked per thread, so each question is measured on its own even while others
+    # run in parallel. Answering and judging are tracked apart, which also works when the judge
+    # shares the pipeline's generator.
+    with track_usage() as usage:
         if generate:
             response = pipeline.run(example.question)
             contexts, answer = response.contexts, response.answer
         else:
             contexts, answer = pipeline.retrieve_for(example.question), ""
 
-        usage = pipeline.generator.usage - before
-
-        retrieved = [Path(c.chunk.source).as_posix() for c in contexts]
-        scores: dict[str, float] = {}
-        reasons: dict[str, str] = {}
-        if example.sources:
-            matched = _match_sources(retrieved, example.sources)
-            scores["hit_rate"] = hit_rate(matched, example.sources)
-            scores["mrr"] = reciprocal_rank(matched, example.sources)
-        if generate and example.answers:
-            scores["exact_match"] = exact_match(answer, example.answers)
-            scores["contains_answer"] = contains_answer(answer, example.answers)
-            scores["f1"] = token_f1(answer, example.answers)
-        if generate and (validity := citation_validity(answer, len(contexts))) is not None:
-            scores["citation_valid"] = validity
-        judge_before = replace(judge.generator.usage) if judge is not None else Usage()
+    retrieved = [Path(c.chunk.source).as_posix() for c in contexts]
+    scores: dict[str, float] = {}
+    reasons: dict[str, str] = {}
+    if example.sources:
+        matched = _match_sources(retrieved, example.sources)
+        scores["hit_rate"] = hit_rate(matched, example.sources)
+        scores["mrr"] = reciprocal_rank(matched, example.sources)
+    if generate and example.answers:
+        scores["exact_match"] = exact_match(answer, example.answers)
+        scores["contains_answer"] = contains_answer(answer, example.answers)
+        scores["f1"] = token_f1(answer, example.answers)
+    if generate and (validity := citation_validity(answer, len(contexts))) is not None:
+        scores["citation_valid"] = validity
+    with track_usage() as judge_usage:
         if generate and judge is not None:
             if example.answers:
                 scores["judge_correct"], reasons["judge_correct"] = judge.correctness(
@@ -168,6 +186,4 @@ def evaluate(
             )
             if (support := judge.citation_support(answer, contexts)) is not None:
                 scores["citation_support"], reasons["citation_support"] = support
-        judge_usage = judge.generator.usage - judge_before if judge is not None else Usage()
-        results.append(EvalResult(example, answer, retrieved, scores, reasons, usage, judge_usage))
-    return EvalReport(results)
+    return EvalResult(example, answer, retrieved, scores, reasons, usage, judge_usage)
