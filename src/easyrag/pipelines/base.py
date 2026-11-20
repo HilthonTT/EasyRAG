@@ -187,22 +187,42 @@ class BasePipeline(ABC):
         return self.retrieve(self.search_query(question), question)
 
     def save(self, path: str | Path) -> None:
+        """Write the index to the directory `path`.
+
+        Every file is written under a temporary name first and only then renamed into place
+        (manifest last), so an interrupted save leaves the previous index readable.
+        """
         path = Path(path)
         path.mkdir(parents=True, exist_ok=True)
-        with open(path / "chunks.jsonl", "w", encoding="utf-8") as f:
-            for chunk in self.chunks:
-                f.write(json.dumps(chunk.to_dict(), ensure_ascii=False) + "\n")
-        embeddings = []
-        for i, retriever in enumerate(self._vector_retrievers()):
-            retriever.vectorstore.save(path / f"vectors_{i}.npz")
+        staged: list[tuple[Path, Path]] = []
+
+        def stage(name: str) -> Path:
+            tmp = path / f".{name}.tmp"
+            staged.append((tmp, path / name))
+            return tmp
+
+        try:
+            with open(stage("chunks.jsonl"), "w", encoding="utf-8") as f:
+                for chunk in self.chunks:
+                    f.write(json.dumps(chunk.to_dict(), ensure_ascii=False) + "\n")
+            embeddings = []
+            vector_retrievers = self._vector_retrievers()
+            for i, retriever in enumerate(vector_retrievers):
+                retriever.vectorstore.save(stage(f"vectors_{i}.npz"))
+                embeddings.append(retriever.embeddings.name)
+            manifest = {
+                "version": INDEX_FORMAT_VERSION,
+                "num_chunks": len(self.chunks),
+                "embeddings": embeddings,
+            }
+            stage("manifest.json").write_text(json.dumps(manifest, indent=2), encoding="utf-8")
+            for tmp, final in staged:
+                os.replace(tmp, final)
+        finally:
+            for tmp, _ in staged:
+                tmp.unlink(missing_ok=True)
+        for i in range(len(vector_retrievers)):
             (path / f"vectors_{i}.json").unlink(missing_ok=True)  # stale version-1 file
-            embeddings.append(retriever.embeddings.name)
-        manifest = {
-            "version": INDEX_FORMAT_VERSION,
-            "num_chunks": len(self.chunks),
-            "embeddings": embeddings,
-        }
-        (path / "manifest.json").write_text(json.dumps(manifest, indent=2), encoding="utf-8")
 
     def load(self, path: str | Path) -> int:
         """Load a saved index into this (empty) pipeline. Returns the number of chunks."""
