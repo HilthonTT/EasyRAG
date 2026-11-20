@@ -11,6 +11,7 @@ import pytest
 from easyrag import Config, Document, NaiveRAGPipeline
 from easyrag.config import load_dotenv
 from easyrag.generators.ollama import OllamaGenerator
+from easyrag.loaders import DirectoryLoader
 from easyrag.pipelines.base import INDEX_FORMAT_VERSION
 
 # --- index persistence ------------------------------------------------------------------------
@@ -146,6 +147,29 @@ def test_dotenv_handles_export_and_only_strips_matching_quotes(
 
     assert os.environ["EASYRAG_T1"] == "quoted"
     assert os.environ["EASYRAG_T2"] == 'ends-with"'
+
+
+# --- loaders and eval sets --------------------------------------------------------------------
+
+
+def test_directory_loader_skips_unreadable_files(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    (tmp_path / "good.txt").write_text("fine", encoding="utf-8")
+    (tmp_path / "bad.html").write_text("<p>x</p>", encoding="utf-8")
+
+    def broken(self: Any) -> Any:
+        raise OSError("disk error")
+
+    monkeypatch.setattr("easyrag.loaders.html.HTMLLoader.load", broken)
+    loader = DirectoryLoader(tmp_path)
+
+    documents = loader.load()
+
+    assert [d.content for d in documents] == ["fine"]
+    assert [p.name for p, _ in loader.errors] == ["bad.html"]
+    with pytest.raises(OSError):
+        DirectoryLoader(tmp_path, skip_errors=False).load()
 
 
 # --- ollama -----------------------------------------------------------------------------------

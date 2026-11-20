@@ -169,10 +169,13 @@ def _apply_filter(pipeline: BasePipeline, metadata_filter: dict[str, object]) ->
 
 
 def _load(docs: str, glob: str = "**/*") -> list[Document]:
+    loader = DirectoryLoader(docs, glob=glob)
     try:
-        documents = DirectoryLoader(docs, glob=glob).load()
-    except (FileNotFoundError, ImportError) as e:  # bad path, or a .pdf without the pdf extra
+        documents = loader.load()
+    except (OSError, ImportError) as e:  # bad path, or a .pdf without the pdf extra
         raise SystemExit(str(e)) from None
+    for path, error in loader.errors:
+        print(f"Skipped {path}: {type(error).__name__}: {error}", file=sys.stderr)
     if not documents:
         raise SystemExit(f"No supported documents found in {docs}")
     return documents

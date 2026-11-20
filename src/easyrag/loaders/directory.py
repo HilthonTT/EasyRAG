@@ -25,13 +25,21 @@ def _load_file(path: Path) -> list[Document]:
 
 
 class DirectoryLoader(BaseLoader):
-    """Load every supported file under a directory, picking a loader by file extension."""
+    """Load every supported file under a directory, picking a loader by file extension.
 
-    def __init__(self, path: str | Path, glob: str = "**/*") -> None:
+    With `skip_errors` (the default), a file that cannot be read or parsed (a corrupt PDF, a
+    permission error) is skipped and recorded in `errors` instead of aborting the whole folder.
+    A missing optional dependency (ImportError) always raises: it would fail every such file.
+    """
+
+    def __init__(self, path: str | Path, glob: str = "**/*", skip_errors: bool = True) -> None:
         self.path = Path(path)
         self.glob = glob
+        self.skip_errors = skip_errors
+        self.errors: list[tuple[Path, Exception]] = []
 
     def load(self) -> list[Document]:
+        self.errors = []
         if self.path.is_file():
             return _load_file(self.path)
         if not self.path.is_dir():
@@ -40,6 +48,13 @@ class DirectoryLoader(BaseLoader):
 
         for file in sorted(self.path.glob(self.glob)):
             if file.is_file() and file.suffix.lower() in LOADERS_BY_SUFFIX:
-                documents.extend(_load_file(file))
+                try:
+                    documents.extend(_load_file(file))
+                except ImportError:
+                    raise
+                except Exception as e:
+                    if not self.skip_errors:
+                        raise
+                    self.errors.append((file, e))
 
         return documents
