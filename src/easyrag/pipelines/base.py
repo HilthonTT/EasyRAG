@@ -223,8 +223,11 @@ class BasePipeline(ABC):
         finally:
             for tmp, _ in staged:
                 tmp.unlink(missing_ok=True)
-        for i in range(len(vector_retrievers)):
-            (path / f"vectors_{i}.json").unlink(missing_ok=True)  # stale version-1 file
+
+        # Vector files of retrievers this pipeline no longer has, and version-1 JSON files.
+        for stale in path.glob("vectors_*"):
+            if stale.name not in {f"vectors_{i}.npz" for i in range(len(vector_retrievers))}:
+                stale.unlink(missing_ok=True)
 
     def load(self, path: str | Path) -> int:
         """Load a saved index into this (empty) pipeline. Returns the number of chunks."""

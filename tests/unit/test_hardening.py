@@ -84,3 +84,19 @@ def test_load_rejects_a_newer_index_format(
 
     with pytest.raises(ValueError, match="format version"):
         _vector_pipeline().load(tmp_path)
+
+
+def test_save_removes_vector_files_of_retrievers_that_are_gone(
+    sample_documents: list[Document], tmp_path: Path
+) -> None:
+    pipeline = _vector_pipeline()
+    pipeline.index(sample_documents)
+    pipeline.save(tmp_path)
+
+    config = Config()
+    config.retriever.method = "bm25"
+    lexical = NaiveRAGPipeline.from_config(config)
+    lexical.index(sample_documents)
+    lexical.save(tmp_path)
+
+    assert not list(tmp_path.glob("vectors_*"))
